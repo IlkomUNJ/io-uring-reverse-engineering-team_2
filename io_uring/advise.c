@@ -28,6 +28,12 @@ struct io_madvise {
 	u32				advice;
 };
 
+/*
+ * initialize io_madvise context from io_uring_sqe if CONFIG_ADVISE_SYSCALLS and CONFIG_MMU are enabled,
+ * validate unsupported fields, set address, length (falling back if zero), and advice,
+ * mark request for forced asynchronous execution,
+ * otherwise return operation not supported
+ */
 int io_madvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 #if defined(CONFIG_ADVISE_SYSCALLS) && defined(CONFIG_MMU)
@@ -48,6 +54,12 @@ int io_madvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 #endif
 }
 
+/*
+ * perform madvise syscall using parameters from io_madvise context,
+ * warn if non-blocking flag is set (unsupported),
+ * set the syscall result in io_kiocb,
+ * return operation not supported if CONFIG_ADVISE_SYSCALLS or CONFIG_MMU are disabled
+ */
 int io_madvise(struct io_kiocb *req, unsigned int issue_flags)
 {
 #if defined(CONFIG_ADVISE_SYSCALLS) && defined(CONFIG_MMU)
@@ -64,6 +76,11 @@ int io_madvise(struct io_kiocb *req, unsigned int issue_flags)
 #endif
 }
 
+/*
+ * determine if io_fadvise operation should be forced asynchronous
+ * based on the advice value; returns false for NORMAL, RANDOM, SEQUENTIAL,
+ * and true for all other advice types
+ */
 static bool io_fadvise_force_async(struct io_fadvise *fa)
 {
 	switch (fa->advice) {
@@ -76,6 +93,12 @@ static bool io_fadvise_force_async(struct io_fadvise *fa)
 	}
 }
 
+/*
+ * initialize io_fadvise context from io_uring_sqe,
+ * validate unsupported fields,
+ * set offset, length (with fallback), and advice,
+ * mark request for forced asynchronous execution if advice requires it
+ */
 int io_fadvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_fadvise *fa = io_kiocb_to_cmd(req, struct io_fadvise);
@@ -93,6 +116,12 @@ int io_fadvise_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * execute fadvise operation using parameters from io_fadvise context,
+ * warn if non-blocking is requested with advice requiring async,
+ * call vfs_fadvise and mark request failed on error,
+ * then set the result in io_kiocb
+ */
 int io_fadvise(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_fadvise *fa = io_kiocb_to_cmd(req, struct io_fadvise);

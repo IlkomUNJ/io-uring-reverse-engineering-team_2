@@ -13,6 +13,9 @@
 #include "rsrc.h"
 #include "filetable.h"
 
+/* Finds an available slot in the file table bitmap. Searches for the next unused bit in the bitmap, 
+starting from the allocation hint position and wrapping around if needed. Returns the slot index if found or an error code if the table is full. */
+
 static int io_file_bitmap_get(struct io_ring_ctx *ctx)
 {
 	struct io_file_table *table = &ctx->file_table;
@@ -36,6 +39,10 @@ static int io_file_bitmap_get(struct io_ring_ctx *ctx)
 	return -ENFILE;
 }
 
+/* Creates a new file table with space for the specified number of files. 
+Allocates memory for both the resource data structure and a bitmap to track which slots are in use. 
+Returns true on success or false if memory allocation fails. */
+
 bool io_alloc_file_tables(struct io_ring_ctx *ctx, struct io_file_table *table,
 			  unsigned nr_files)
 {
@@ -48,12 +55,18 @@ bool io_alloc_file_tables(struct io_ring_ctx *ctx, struct io_file_table *table,
 	return false;
 }
 
+/* Cleans up and releases memory used by a file table. 
+Frees both the resource data structure and the bitmap used for tracking allocated slots. */
+
 void io_free_file_tables(struct io_ring_ctx *ctx, struct io_file_table *table)
 {
 	io_rsrc_data_free(ctx, &table->data);
 	bitmap_free(table->bitmap);
 	table->bitmap = NULL;
 }
+
+/* Registers a file at a specific slot in the file table. Checks for invalid conditions, allocates a resource node,
+ and stores the file reference in that node. Returns 0 on success or an error code if the operation fails. */
 
 static int io_install_fixed_file(struct io_ring_ctx *ctx, struct file *file,
 				 u32 slot_index)
@@ -80,6 +93,9 @@ static int io_install_fixed_file(struct io_ring_ctx *ctx, struct file *file,
 	return 0;
 }
 
+/* Internal helper for installing a fixed file descriptor. Either uses the provided slot or allocates 
+a new one if requested, then installs the file in that slot. Returns the slot number or an error code. */
+
 int __io_fixed_fd_install(struct io_ring_ctx *ctx, struct file *file,
 			  unsigned int file_slot)
 {
@@ -104,6 +120,11 @@ int __io_fixed_fd_install(struct io_ring_ctx *ctx, struct file *file,
  * Note when io_fixed_fd_install() returns error value, it will ensure
  * fput() is called correspondingly.
  */
+
+/* Installs a file descriptor in the fixed file table with proper locking. 
+Acquires the submission lock, installs the file using __io_fixed_fd_install, releases the lock, 
+and handles error cleanup if needed. */
+
 int io_fixed_fd_install(struct io_kiocb *req, unsigned int issue_flags,
 			struct file *file, unsigned int file_slot)
 {
@@ -118,6 +139,9 @@ int io_fixed_fd_install(struct io_kiocb *req, unsigned int issue_flags,
 		fput(file);
 	return ret;
 }
+
+/* Removes a file from the fixed file table at the specified offset. Checks if the slot is valid and in use,
+ then clears that slot in both the resource table and bitmap. Returns 0 on success or an error code. */
 
 int io_fixed_fd_remove(struct io_ring_ctx *ctx, unsigned int offset)
 {
@@ -135,6 +159,9 @@ int io_fixed_fd_remove(struct io_ring_ctx *ctx, unsigned int offset)
 	io_file_bitmap_clear(&ctx->file_table, offset);
 	return 0;
 }
+
+/* Sets the range of slots that can be used for automatic file allocation. Copies the range parameters from user 
+space, validates them, and updates the allocation range in the context. This restricts where new files can be automatically allocated. */
 
 int io_register_file_alloc_range(struct io_ring_ctx *ctx,
 				 struct io_uring_file_index_range __user *arg)

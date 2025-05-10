@@ -26,6 +26,10 @@ struct io_epoll_wait {
 	struct epoll_event __user	*events;
 };
 
+/*
+ * initialize io_epoll context from io_uring_sqe, validate unsupported fields,
+ * extract epoll descriptors and operation, and copy event data if required
+ */
 int io_epoll_ctl_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_epoll *epoll = io_kiocb_to_cmd(req, struct io_epoll);
@@ -48,7 +52,7 @@ int io_epoll_ctl_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
-/**
+/*
 * prepare io_epoll reference, then start the eventpoll in non-blocking mode according
 * to the value passed on io_kiocdb
 */
@@ -68,6 +72,10 @@ int io_epoll_ctl(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+ * initialize io_epoll_wait context from io_uring_sqe, validate unsupported fields,
+ * then set maxevents and user-space events pointer for epoll wait operation
+ */
 int io_epoll_wait_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_epoll_wait *iew = io_kiocb_to_cmd(req, struct io_epoll_wait);
@@ -80,6 +88,11 @@ int io_epoll_wait_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * execute epoll wait by sending events to user-space buffer,
+ * return -EAGAIN if no events are ready, mark request failed on error,
+ * and set the result in io_kiocb
+ */
 int io_epoll_wait(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_epoll_wait *iew = io_kiocb_to_cmd(req, struct io_epoll_wait);
