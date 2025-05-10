@@ -32,7 +32,8 @@ struct io_cancel {
 			 IORING_ASYNC_CANCEL_USERDATA | IORING_ASYNC_CANCEL_OP)
 
 /*
- * Returns true if the request matches the criteria outlined by 'cd'.
+ * determine if an io_kiocb request matches cancellation criteria specified in io_cancel_data;
+ * checks context, optionally file descriptor, operation code, user data, and sequence number
  */
 bool io_cancel_req_match(struct io_kiocb *req, struct io_cancel_data *cd)
 {
@@ -65,6 +66,10 @@ check_seq:
 	return true;
 }
 
+/*
+ * callback to check if an io_kiocb request matches cancellation criteria,
+ * by invoking io_cancel_req_match with provided cancel data
+ */
 static bool io_cancel_cb(struct io_wq_work *work, void *data)
 {
 	struct io_kiocb *req = container_of(work, struct io_kiocb, work);
@@ -73,6 +78,11 @@ static bool io_cancel_cb(struct io_wq_work *work, void *data)
 	return io_cancel_req_match(req, cd);
 }
 
+/*
+ * attempt to cancel one async io request in the given task context using cancellation criteria;
+ * calls io_wq_cancel_cb with a callback to match requests,
+ * returns 0 on success, -EALREADY if request is running, or -ENOENT if not found or invalid context
+ */
 static int io_async_cancel_one(struct io_uring_task *tctx,
 			       struct io_cancel_data *cd)
 {
@@ -100,6 +110,12 @@ static int io_async_cancel_one(struct io_uring_task *tctx,
 	return ret;
 }
 
+/*
+ * attempt to cancel an async io request using multiple cancellation methods in order:
+ * 1) try async cancellation via io_async_cancel_one,
+ * 2) fall back to poll, waitid, futex, and timeout cancellation as needed,
+ * returns 0 on success or appropriate error code if cancellation fails
+ */
 int io_try_cancel(struct io_uring_task *tctx, struct io_cancel_data *cd,
 		  unsigned issue_flags)
 {
@@ -135,6 +151,12 @@ int io_try_cancel(struct io_uring_task *tctx, struct io_cancel_data *cd,
 	return ret;
 }
 
+/*
+ * prepare io_cancel context from io_uring_sqe,
+ * validate unsupported flags and fields,
+ * set cancellation address, flags, and optionally file descriptor or opcode,
+ * return error if invalid combinations are detected
+ */
 int io_async_cancel_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_cancel *cancel = io_kiocb_to_cmd(req, struct io_cancel);
@@ -162,6 +184,11 @@ int io_async_cancel_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+ * attempt to cancel async io requests matching cancel data across the given task context;
+ * if 'all' flag is set, continue cancelling across all io_uring tasks in the ring context,
+ * otherwise stop after first match; returns number of cancellations or error code
+ */
 static int __io_async_cancel(struct io_cancel_data *cd,
 			     struct io_uring_task *tctx,
 			     unsigned int issue_flags)
@@ -195,6 +222,13 @@ static int __io_async_cancel(struct io_cancel_data *cd,
 	return all ? nr : ret;
 }
 
+/*
+ * entry point to asynchronously cancel io requests,
+ * prepares cancellation data from io_cancel context,
+ * retrieves the file associated with the request,
+ * then calls __io_async_cancel to perform actual cancellation,
+ * handles errors and sets the result in io_kiocb
+ */
 int io_async_cancel(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_cancel *cancel = io_kiocb_to_cmd(req, struct io_cancel);
@@ -232,6 +266,11 @@ done:
 	return IOU_OK;
 }
 
+/*
+ * perform synchronous cancellation by preparing fixed file reference if needed,
+ * then delegate to __io_async_cancel to handle the cancellation,
+ * returns error if fixed file lookup fails
+ */
 static int __io_sync_cancel(struct io_uring_task *tctx,
 			    struct io_cancel_data *cd, int fd)
 {
@@ -253,6 +292,16 @@ static int __io_sync_cancel(struct io_uring_task *tctx,
 	return __io_async_cancel(cd, tctx, 0);
 }
 
+/*
+ * perform synchronous cancellation of io requests with user-supplied parameters,
+ * validates input flags and padding,
+ * optionally acquires a normal file descriptor,
+ * attempts cancellation via __io_sync_cancel,
+ * if request is running (-EALREADY), waits and retries until timeout or completion,
+ * handles signals and timeout during wait,
+ * returns 0 on success or appropriate error code,
+ * must be called with ctx->uring_lock held
+ */
 int io_sync_cancel(struct io_ring_ctx *ctx, void __user *arg)
 	__must_hold(&ctx->uring_lock)
 {
@@ -342,6 +391,13 @@ out:
 	return ret;
 }
 
+/*
+ * remove and cancel all matching io_kiocb requests from the given hlist,
+ * filtering by task context and cancel_all flag,
+ * calls provided cancel callback on each matched request,
+ * returns true if any requests were cancelled,
+ * requires ctx->uring_lock to be held
+ */
 bool io_cancel_remove_all(struct io_ring_ctx *ctx, struct io_uring_task *tctx,
 			  struct hlist_head *list, bool cancel_all,
 			  bool (*cancel)(struct io_kiocb *))
@@ -363,6 +419,13 @@ bool io_cancel_remove_all(struct io_ring_ctx *ctx, struct io_uring_task *tctx,
 	return found;
 }
 
+/*
+ * remove and cancel io_kiocb requests from the given hlist that match cancellation criteria,
+ * locks submission context during operation,
+ * calls provided cancel callback on each matched request,
+ * stops after first match unless IORING_ASYNC_CANCEL_ALL flag is set,
+ * returns number of cancelled requests or -ENOENT if none matched
+ */
 int io_cancel_remove(struct io_ring_ctx *ctx, struct io_cancel_data *cd,
 		     unsigned int issue_flags, struct hlist_head *list,
 		     bool (*cancel)(struct io_kiocb *))
