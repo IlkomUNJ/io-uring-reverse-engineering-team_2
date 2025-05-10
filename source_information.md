@@ -56,6 +56,57 @@ Implements the NOP (no-operation) command for io_uring. Provides a lightweight o
 ### notif.c
 Manages notifications for io_uring operations. Implements various notification mechanisms for completion events. Coordinates signaling between kernel and userspace when operations complete.
 
+### opdef.c
+Defines all the supported io_uring operations and their handlers. Think of it like a registry where all the operation types and corresponding functions are listed.
+
+### openclose.c
+Handles async file open and close operations. This includes the whole lifecycle from opening to closing a file via io_uring.
+
+### poll.c
+Implements polling operations for file descriptors through io_uring. It works in a similar way to epoll or poll system calls but fully async.
+
+### register.c
+Takes care of registering various resources (like buffers or file descriptors) so they can be reused more efficiently during I/O operations.
+
+### rsrc.c
+General resource manager for io_uring. It helps allocate, track, and clean up resources. It’s like a layer of abstraction to keep resource usage clean and efficient.
+
+### rw.c
+Implements the main read and write operations. This is where actual file I/O happens. It includes various optimizations for speed and low latency.
+
+### splice.c
+Implements zero-copy data movement between file descriptors using splice. So data can move directly between two FDs (like a pipe and a file) without bouncing through userspace.
+
+### sqpoll.c
+Handles submission queue polling using a kernel thread that continuously checks for new submissions. This helps reduce latency since it avoids user-to-kernel context switches.
+
+### statx.c
+Implements statx, which gives detailed file metadata. It's like an advanced version of stat, done asynchronously through io_uring.
+
+### sync.c
+Takes care of sync-related operations like fsync and fdatasync. It ensures that data actually gets written to disk.
+
+### tctx.c
+Manages task contexts, meaning it keeps track of each thread or process using io_uring, and their associated state.
+
+### timeout.c
+Implements timeouts for requests. This includes setting up timers and canceling operations if they take too long.
+
+### truncate.c
+Allows file truncation like changing a file's size to happen asynchronously through io_uring.
+
+### uring_cmd.c
+Implements a way to send custom device commands through io_uring. This lets apps talk directly to devices using custom formats.
+
+### waitid.c
+Handles asynchronous waiting on process state changes, like when a child process exits. It ties process monitoring into io_uring’s async model.
+
+### xattr.c
+Implements async operations for extended file attributes — basically file metadata beyond the standard stuff. You can get, set, or list these attributes.
+
+### zcrx.c
+Optimizes data reception in networking by doing zero-copy. This speeds up receiving data by skipping unnecessary memory operations.
+
 
 ## Headers
 ### advice.h
