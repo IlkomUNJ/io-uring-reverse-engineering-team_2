@@ -305,6 +305,341 @@ buf_sel_arg | io_uring/kbuf.h | struct iovec *iovs, size_t out_len, size_t max_l
 | | | | u64_to_user_ptr | io_uring/kbuf.c | declaration
 | | | | io_buffers_peek | io_uring/kbuf.c | declaration
 | | | | io_buffers_peek | io_uring/kbuf.h | declaration
+io_msg | io_uring/msg_ring.c | struct file			*file, struct file			*src_file, struct callback_head		tw, u64 user_data, u32 len, u32 cmd, u32 src_fd, union { 		u32 dst_fd, u32 cqe_flags |io_msg_ring_cleanup | io_uring/msg_ring.c | declaration
+| | | | kmem_cache_alloc | io_uring/msg_ring.c | declaration
+| | | | kmem_cache_alloc | io_uring/msg_ring.c | declaration
+| | | | io_msg_ring_data | io_uring/msg_ring.c | declaration
+| | | | io_msg_grab_file | io_uring/msg_ring.c | declaration
+| | | | io_msg_install_complete | io_uring/msg_ring.c | declaration
+| | | | io_msg_tw_fd_complete | io_uring/msg_ring.c | declaration
+| | | | io_msg_fd_remote | io_uring/msg_ring.c | declaration
+| | | | io_msg_send_fd | io_uring/msg_ring.c | declaration
+| | | | __io_msg_ring_prep | io_uring/msg_ring.c | declaration
+| | | | __io_msg_ring_prep | io_uring/msg_ring.c | declaration
+| | | | io_msg_ring | io_uring/msg_ring.c | declaration
+| | | | io_uring_sync_msg_ring | io_uring/msg_ring.c | declaration
+| | | | io_uring_sync_msg_ring | io_uring/msg_ring.c | function parameter or call
+| | | | io_uring_sync_msg_ring | io_uring/msg_ring.c | function parameter or call
+| | | | __io_msg_ring_data | io_uring/msg_ring.c | reference
+io_napi_entry | io_uring/napi.c | unsigned int		napi_id, struct list_head	list, unsigned long		timeout, struct hlist_node	node, struct rcu_head		rcu | __io_napi_add_id | io_uring/napi.c | declaration
+| | | | __io_napi_del_id | io_uring/napi.c | declaration
+| | | | __io_napi_remove_stale | io_uring/napi.c | declaration
+| | | | ktime_after | io_uring/napi.c | declaration
+| | | | ktime_after | io_uring/napi.c | declaration
+| | | | io_napi_free | io_uring/napi.c | declaration
+io_shutdown | io_uring/net.c | struct file			*file, int				how | io_shutdown_prep | io_uring/net.c | declaration
+| | | | io_shutdown | io_uring/net.c | declaration
+| | | | io_shutdown | io_uring/net.c | declaration
+| | | | io_shutdown | io_uring/net.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+io_accept | io_uring/net.c | struct file			*file, struct sockaddr __user		*addr, int __user			*addr_len, int				flags, int				iou_flags, u32				file_slot, unsigned long			nofile |  io_accept_prep | io_uring/net.c | declaration
+| | | | io_accept | io_uring/net.c | declaration
+| | | | io_accept | io_uring/net.c | declaration
+| | | | io_accept | io_uring/net.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+io_socket | io_uring/net.c | struct file			*file, int				domain, int				type, int				protocol, int				flags, u32				file_slot, unsigned long			nofile |  io_socket_prep | io_uring/net.c | declaration
+| | | | io_socket | io_uring/net.c | declaration
+| | | | io_socket | io_uring/net.c | declaration
+| | | | io_socket | io_uring/net.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+io_connect | io_uring/net.c | struct file			*file, struct sockaddr __user		*addr, int				addr_len, bool				in_progress, bool				seen_econnaborted | io_connect_prep | io_uring/net.c | declaration
+| | | | io_connect | io_uring/net.c | declaration
+| | | | io_connect | io_uring/net.c | declaration
+| | | | io_connect | io_uring/net.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+io_bind | io_uring/net.c | struct file			*file, int				addr_len |  io_bind_prep | io_uring/net.c | declaration
+| | | | io_bind | io_uring/net.c | declaration
+| | | | io_bind | io_uring/net.c | declaration
+| | | | io_bind | io_uring/net.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+io_listen | io_uring/net.c | struct file			*file, int				backlog | io_listen_prep | io_uring/net.c | declaration
+| | | | io_listen | io_uring/net.c | declaration
+| | | | io_listen | io_uring/net.c | declaration
+| | | | io_listen | io_uring/net.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+io_sr_msg | io_uring/net.c | struct file			*file, union { 		struct compat_msghdr __user	*umsg_compat, struct user_msghdr __user	*umsg, void __user			*buf |   io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_send_setup | io_uring/net.c | declaration
+| | | | io_sendmsg_setup | io_uring/net.c | declaration
+| | | | io_sendmsg_prep | io_uring/net.c | declaration
+| | | | iter_iov | io_uring/net.c | declaration
+| | | | io_sendmsg | io_uring/net.c | declaration
+| | | | if | io_uring/net.c | declaration
+| | | | io_send | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg | io_uring/net.c | declaration
+| | | | if | io_uring/net.c | declaration
+| | | | io_recv | io_uring/net.c | declaration
+| | | | io_send_zc_cleanup | io_uring/net.c | declaration
+| | | | io_send_zc_prep | io_uring/net.c | declaration
+| | | | io_send_zc_import | io_uring/net.c | declaration
+| | | | io_send_zc | io_uring/net.c | declaration
+| | | | io_sendmsg_zc | io_uring/net.c | declaration
+| | | | io_sendrecv_fail | io_uring/net.c | declaration
+io_recvzc | io_uring/net.c | struct file			*file, unsigned			msg_flags, u16				flags, u32				len, struct io_zcrx_ifq		*ifq | io_recvzc_prep | io_uring/net.c | declaration
+| | | | io_recvzc | io_uring/net.c | declaration
+| | | | io_recvzc | io_uring/net.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+| | | | io_recvzc | io_uring/zcrx.h | declaration
+io_recvmsg_multishot_hdr | io_uring/net.c | struct io_uring_recvmsg_out msg, struct sockaddr_storage addr | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+io_async_msghdr | io_uring/net.h | #if defined(CONFIG_NET) 	struct iou_vec				vec, struct_group(clear, 		int				namelen, struct iovec			fast_iov, __kernel_size_t			controllen, __kernel_size_t			payloadlen, struct sockaddr __user		*uaddr, struct msghdr			msg, struct sockaddr_storage		addr, ), #else 	struct_group(clear), #endif | io_free_alloc_caches | io_uring/io_uring.c | declaration
+| | | | io_free_alloc_caches | io_uring/io_uring.c | declaration
+| | | | io_netmsg_iovec_free | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_netmsg_recycle | io_uring/net.c | declaration
+| | | | io_sendmsg_recvmsg_cleanup | io_uring/net.c | declaration
+| | | | io_send_setup | io_uring/net.c | declaration
+| | | | io_sendmsg_setup | io_uring/net.c | declaration
+| | | | io_bundle_nbufs | io_uring/net.c | declaration
+| | | | iter_iov | io_uring/net.c | declaration
+| | | | io_sendmsg | io_uring/net.c | declaration
+| | | | if | io_uring/net.c | declaration
+| | | | io_send | io_uring/net.c | declaration
+| | | | if | io_uring/net.c | declaration
+| | | | if | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg_prep_setup | io_uring/net.c | declaration
+| | | | io_recvmsg | io_uring/net.c | declaration
+| | | | if | io_uring/net.c | declaration
+| | | | io_recv | io_uring/net.c | declaration
+| | | | io_send_zc_cleanup | io_uring/net.c | declaration
+| | | | io_send_zc_prep | io_uring/net.c | declaration
+| | | | io_send_zc_import | io_uring/net.c | declaration
+| | | | io_send_zc | io_uring/net.c | declaration
+| | | | io_sendmsg_zc | io_uring/net.c | declaration
+| | | | io_connect_prep | io_uring/net.c | declaration
+| | | | io_connect | io_uring/net.c | declaration
+| | | | io_bind_prep | io_uring/net.c | declaration
+| | | | io_bind | io_uring/net.c | declaration
+| | | | io_netmsg_cache_free | io_uring/net.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+io_nop | io_uring/nop.c | /* NOTE: kiocb has the file as the first member, so don't do it here */ 	struct file     *file, int             result, int		fd, unsigned int	flags | io_nop_prep | io_uring/nop.c | declaration
+| | | | io_nop | io_uring/nop.c | declaration
+| | | | io_nop | io_uring/nop.c | declaration
+| | | | io_nop | io_uring/nop.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | assignment or return
+io_notif_data | io_uring/notif.h | struct file		*file, struct ubuf_info	uarg, struct io_notif_data	*next, struct io_notif_data	*head, unsigned		account_pages, bool			zc_report, bool			zc_used, bool			zc_copied | io_send_zc_prep | io_uring/net.c | declaration
+| | | | io_notif_tw_complete | io_uring/notif.c | declaration
+| | | | io_notif_tw_complete | io_uring/notif.c | declaration
+| | | | io_link_skb | io_uring/notif.c | declaration
+| | | | io_link_skb | io_uring/notif.c | declaration
+| | | | io_link_skb | io_uring/notif.c | declaration
+| | | | io_link_skb | io_uring/notif.c | declaration
+| | | | io_kiocb_to_cmd | io_uring/notif.h | declaration
+| | | | io_notif_flush | io_uring/notif.h | declaration
+| | | | io_notif_account_mem | io_uring/notif.h | declaration
+io_issue_def | io_uring/opdef.h | /* needs req->file assigned */ 	unsigned		needs_file : 1, /* should block plug */ 	unsigned		plug : 1, /* supports ioprio */ 	unsigned		ioprio : 1, /* supports iopoll */ 	unsigned		iopoll : 1, /* op supports buffer selection */ 	unsigned		buffer_select : 1, /* hash wq insertion if file is a regular file */ 	unsigned		hash_reg_file : 1, /* unbound wq insertion if file is a non-regular file */ 	unsigned		unbound_nonreg_file : 1, /* set if opcode supports polled "wait" */ 	unsigned		pollin : 1, unsigned		pollout : 1, unsigned		poll_exclusive : 1, /* skip auditing */ 	unsigned		audit_skip : 1, /* have to be put into the iopoll list */ 	unsigned		iopoll_queue : 1, /* vectored opcode, set if 1) vectored, and 2) handler needs to know */ 	unsigned		vectored : 1, /* size of async data needed, if any */ 	unsigned short		async_size, int (*issue)(struct io_kiocb *, unsigned int), int (*prep)(struct io_kiocb *, const struct io_uring_sqe *) | io_prep_async_work | io_uring/io_uring.c | declaration
+| | | | io_drain_req | io_uring/io_uring.c | declaration
+| | | | io_drain_req | io_uring/io_uring.c | declaration
+| | | | io_issue_sqe | io_uring/io_uring.c | declaration
+| | | | io_wq_submit_work | io_uring/io_uring.c | declaration
+| | | | io_init_fail_req | io_uring/io_uring.c | declaration
+| | | | io_req_set_res | io_uring/io_uring.h | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_arm_poll_handler | io_uring/poll.c | declaration
+| | | | io_iov_compat_buffer_select_prep | io_uring/rw.c | declaration
+io_cold_def | io_uring/opdef.h | const char		*name, void (*cleanup)(struct io_kiocb *), void (*fail)(struct io_kiocb *) | io_clean_op | io_uring/io_uring.c | declaration
+| | | | io_req_defer_failed | io_uring/io_uring.c | declaration
+io_open | io_uring/openclose.c | struct file			*file, int				dfd, u32				file_slot, struct filename			*filename, struct open_how			how, unsigned long			nofile | io_openat_force_async | io_uring/openclose.c | declaration
+| | | | __io_openat_prep | io_uring/openclose.c | declaration
+| | | | io_openat_prep | io_uring/openclose.c | declaration
+| | | | io_openat2_prep | io_uring/openclose.c | declaration
+| | | | io_openat2 | io_uring/openclose.c | declaration
+| | | | io_open_cleanup | io_uring/openclose.c | declaration
+io_close | io_uring/openclose.c | struct file			*file, int				fd, u32				file_slot | io_no_issue | io_uring/opdef.c | assignment or return
+| | | | io_close_fixed | io_uring/openclose.c | declaration
+| | | | io_close_prep | io_uring/openclose.c | declaration
+| | | | io_close | io_uring/openclose.c | declaration
+| | | | io_close | io_uring/openclose.c | declaration
+| | | | io_close | io_uring/openclose.h | declaration
+io_fixed_install | io_uring/openclose.c | struct file			*file, unsigned int			o_flags | io_install_fixed_fd_prep | io_uring/openclose.c | declaration
+| | | | io_install_fixed_fd_prep | io_uring/openclose.c | declaration
+| | | | io_install_fixed_fd | io_uring/openclose.c | declaration
+| | | | io_install_fixed_fd | io_uring/openclose.c | declaration
+io_poll_update | io_uring/poll.c | struct file			*file, u64				old_user_data, u64				new_user_data, __poll_t			events, bool				update_events, bool				update_user_data |  | io_poll_remove_prep | io_uring/poll.c | declaration
+| | | | io_poll_remove | io_uring/poll.c | declaration
+io_poll_table | io_uring/poll.c | struct poll_table_struct pt, struct io_kiocb *req, int nr_entries, int error, bool owning, /* output value, set only if arm poll returns >0 */ 	__poll_t result_mask |  | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_add_hash | io_uring/poll.c | declaration
+| | | | io_poll_add_hash | io_uring/poll.c | declaration
+| | | | io_arm_poll_handler | io_uring/poll.c | declaration
+| | | | io_poll_add | io_uring/poll.c | declaration
+io_poll | io_uring/poll.h | struct file			*file, struct wait_queue_head		*head, __poll_t			events, int				retries, struct wait_queue_entry		wait | io_poll_mark_cancelled | io_uring/poll.c | declaration
+| | | | io_poll_mark_cancelled | io_uring/poll.c | declaration
+| | | | io_kiocb_to_cmd | io_uring/poll.c | declaration
+| | | | io_init_poll_iocb | io_uring/poll.c | declaration
+| | | | io_poll_remove_entry | io_uring/poll.c | declaration
+| | | | io_poll_task_func | io_uring/poll.c | declaration
+| | | | io_poll_task_func | io_uring/poll.c | declaration
+| | | | io_pollfree_wake | io_uring/poll.c | declaration
+| | | | io_pollfree_wake | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | function parameter or call
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_double_prepare | io_uring/poll.c | declaration
+| | | | io_poll_add_hash | io_uring/poll.c | declaration
+| | | | io_poll_add_prep | io_uring/poll.c | declaration
+| | | | io_poll_add | io_uring/poll.c | declaration
+| | | | io_poll_remove | io_uring/poll.c | declaration
+async_poll | io_uring/poll.h | struct io_poll		poll, struct io_poll		*double_poll | io_free_alloc_caches | io_uring/io_uring.c | declaration
+| | | | io_queue_next | io_uring/io_uring.c | declaration
+| | | | io_poll_add_hash | io_uring/poll.c | declaration
+| | | | io_poll_add_hash | io_uring/poll.c | declaration
+| | | | io_poll_add_hash | io_uring/poll.c | declaration
+| | | | io_arm_poll_handler | io_uring/poll.c | declaration
+io_ring_ctx_rings | io_uring/register.c | struct io_rings *rings, struct io_uring_sqe *sq_sqes, struct io_mapped_region sq_region, struct io_mapped_region ring_region | __io_register_iowq_aff | io_uring/register.c | declaration
+| | | | __io_register_iowq_aff | io_uring/register.c | declaration
+| | | | io_register_resize_rings | io_uring/register.c | declaration
+io_rsrc_update | io_uring/rsrc.c | struct file			*file, u64				arg, u32				nr_args, u32				offset |   io_files_update_prep | io_uring/rsrc.c | declaration
+| | | | io_files_update_prep | io_uring/rsrc.c | declaration
+| | | | io_files_update | io_uring/rsrc.c | declaration
+io_rsrc_node | io_uring/rsrc.h | unsigned char			type, int				refs, u64 tag, union { 		unsigned long file_ptr, struct io_mapped_ubuf *buf | io_free_file_tables | io_uring/filetable.c | declaration
+| | | | io_fixed_fd_remove | io_uring/filetable.c | declaration
+| | | | io_slot_flags | io_uring/filetable.h | declaration
+| | | | io_slot_flags | io_uring/filetable.h | declaration
+| | | | io_slot_flags | io_uring/filetable.h | declaration
+| | | | io_wq_submit_work | io_uring/io_uring.c | declaration
+| | | | io_msg_grab_file | io_uring/msg_ring.c | declaration
+| | | | io_buffer_unmap | io_uring/rsrc.c | declaration
+| | | | io_buffer_unmap | io_uring/rsrc.c | declaration
+| | | | io_rsrc_cache_init | io_uring/rsrc.c | declaration
+| | | | io_rsrc_data_alloc | io_uring/rsrc.c | declaration
+| | | | io_rsrc_data_alloc | io_uring/rsrc.c | declaration
+| | | | io_rsrc_data_alloc | io_uring/rsrc.c | declaration
+| | | | io_free_rsrc_node | io_uring/rsrc.c | declaration
+| | | | io_sqe_files_unregister | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | io_vec_realloc | io_uring/rsrc.c | declaration
+| | | | io_rsrc_cache_free | io_uring/rsrc.h | declaration
+| | | | io_free_rsrc_node | io_uring/rsrc.h | declaration
+| | | | io_rsrc_data_alloc | io_uring/rsrc.h | declaration
+| | | | io_buffer_validate | io_uring/rsrc.h | declaration
+| | | | io_put_rsrc_node | io_uring/rsrc.h | declaration
+| | | | io_put_rsrc_node | io_uring/rsrc.h | declaration
+| | | | io_req_put_rsrc_nodes | io_uring/rsrc.h | declaration
+| | | | io_req_put_rsrc_nodes | io_uring/rsrc.h | declaration
+| | | | io_req_put_rsrc_nodes | io_uring/rsrc.h | declaration
+| | | | io_splice_cleanup | io_uring/splice.c | declaration
+| | | | io_async_cancel | io_uring/cancel.c | declaration
+io_mapped_ubuf | io_uring/rsrc.h | u64		ubuf, unsigned int	len, unsigned int	nr_bvecs, unsigned int    folio_shift, refcount_t	refs, unsigned long	acct_pages, void		(*release)(void *), void		*priv, bool		is_kbuf, u8		dir, struct bio_vec	bvec[] __counted_by(nr_bvecs) | io_uring_show_fdinfo | io_uring/fdinfo.c | declaration
+| | | | io_release_ubuf | io_uring/rsrc.c | declaration
+| | | | io_release_ubuf | io_uring/rsrc.c | declaration
+| | | | kvmalloc | io_uring/rsrc.c | declaration
+| | | | io_free_imu | io_uring/rsrc.c | declaration
+| | | | io_buffer_unmap | io_uring/rsrc.c | declaration
+| | | | io_rsrc_cache_init | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | ERR_PTR | io_uring/rsrc.c | declaration
+| | | | io_vec_realloc | io_uring/rsrc.c | declaration
+| | | | io_vec_realloc | io_uring/rsrc.c | declaration
+| | | | io_vec_realloc | io_uring/rsrc.c | declaration
+| | | | io_vec_realloc | io_uring/rsrc.c | declaration
+| | | | io_vec_realloc | io_uring/rsrc.c | declaration
+| | | | io_vec_realloc | io_uring/rsrc.c | declaration
+io_imu_folio_data | io_uring/rsrc.h | /* Head folio can be partially included in the fixed buf */ 	unsigned int	nr_pages_head, /* For non-head/tail folios, has to be fully included */ 	unsigned int	nr_pages_mid, unsigned int	folio_shift, unsigned int	nr_folios | io_region_init_ptr | io_uring/memmap.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | | io_sqe_buffers_unregister | io_uring/rsrc.c | declaration
+| | | |  | io_uring/rsrc.h | declaration
+| | | | io_buffer_validate | io_uring/rsrc.h | declaration
+io_rw | io_uring/rw.c | /* NOTE: kiocb has the file as the first member, so don't do it here */ 	struct kiocb			kiocb, u64				addr, u32				len, rwf_t				flags | io_complete_rw_iopoll | io_uring/rw.c | declaration
+| | | | io_iov_compat_buffer_select_prep | io_uring/rw.c | declaration
+| | | | io_iov_buffer_select_prep | io_uring/rw.c | declaration
+| | | | io_iov_compat_buffer_select_prep | io_uring/rw.c | declaration
+| | | | io_meta_restore | io_uring/rw.c | declaration
+| | | | io_meta_restore | io_uring/rw.c | declaration
+| | | | io_prep_rwv | io_uring/rw.c | declaration
+| | | | __io_prep_rw | io_uring/rw.c | declaration
+| | | | io_rw_prep_reg_vec | io_uring/rw.c | declaration
+| | | | io_read_mshot_prep | io_uring/rw.c | declaration
+| | | | io_readv_writev_cleanup | io_uring/rw.c | declaration
+| | | | io_rw_should_reissue | io_uring/rw.c | declaration
+| | | | io_req_end_write | io_uring/rw.c | declaration
+| | | | io_req_io_end | io_uring/rw.c | declaration
+| | | | io_req_rw_complete | io_uring/rw.c | declaration
+| | | | io_complete_rw | io_uring/rw.c | declaration
+| | | | io_complete_rw_iopoll | io_uring/rw.c | declaration
+| | | | io_rw_done | io_uring/rw.c | declaration
+| | | | io_rw_done | io_uring/rw.c | declaration
+| | | | loop_rw_iter | io_uring/rw.c | declaration
+| | | | loop_rw_iter | io_uring/rw.c | declaration
+| | | | io_rw_should_retry | io_uring/rw.c | declaration
+| | | | io_iter_do_read | io_uring/rw.c | declaration
+| | | | io_rw_init_file | io_uring/rw.c | declaration
+| | | | __io_read | io_uring/rw.c | declaration
+| | | | io_read_mshot | io_uring/rw.c | declaration
+| | | | io_write | io_uring/rw.c | declaration
+| | | | io_rw_fail | io_uring/rw.c | declaration
+io_meta_state | io_uring/rw.h | u32			seed, struct iov_iter_state	iter_meta |  | | 
+io_async_rw | io_uring/rw.h | struct iou_vec			vec, size_t				bytes_done, struct_group(clear, 		struct iov_iter			iter, struct iov_iter_state		iter_state, struct iovec			fast_iov, /* 		 * wpq is for buffered io, while meta fields are used with 		 * direct io 		 */ 		union { 			struct wait_page_queue		wpq, struct { 				struct uio_meta			meta, struct io_meta_state		meta_state | io_free_alloc_caches | io_uring/io_uring.c | declaration
+| | | | io_free_alloc_caches | io_uring/io_uring.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_no_issue | io_uring/opdef.c | declaration
+| | | | io_iov_compat_buffer_select_prep | io_uring/rw.c | declaration
+| | | | io_iov_compat_buffer_select_prep | io_uring/rw.c | declaration
+| | | | import_ubuf | io_uring/rw.c | declaration
+| | | | io_rw_recycle | io_uring/rw.c | declaration
+| | | | io_rw_alloc_async | io_uring/rw.c | declaration
+| | | | io_meta_save_state | io_uring/rw.c | declaration
+| | | | io_meta_restore | io_uring/rw.c | declaration
+| | | | io_meta_restore | io_uring/rw.c | declaration
+| | | | io_prep_rwv | io_uring/rw.c | declaration
+| | | | __io_prep_rw | io_uring/rw.c | declaration
+| | | | io_rw_prep_reg_vec | io_uring/rw.c | declaration
+| | | | io_rw_should_reissue | io_uring/rw.c | declaration
+| | | | io_fixup_rw_res | io_uring/rw.c | declaration
+| | | | io_rw_should_retry | io_uring/rw.c | declaration
+| | | | io_rw_init_file | io_uring/rw.c | declaration
+| | | | io_rw_init_file | io_uring/rw.c | reference
+| | | | __io_read | io_uring/rw.c | declaration
+| | | | io_write | io_uring/rw.c | declaration
+| | | | io_rw_cache_free | io_uring/rw.c | declaration
 
 If the following row value in a column is missing, assume the value is the same with the previous row in the same column. 
 Continue until all data structures documented properly.
