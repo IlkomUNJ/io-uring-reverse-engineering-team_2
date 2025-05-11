@@ -47,6 +47,11 @@ struct io_link {
 	int				flags;
 };
 
+/*
+* validate rename request fields and copy old/new pathnames from userspace,
+* set directory fds and rename flags,
+* mark request for cleanup and force async execution
+*/
 int io_renameat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_rename *ren = io_kiocb_to_cmd(req, struct io_rename);
@@ -78,6 +83,12 @@ int io_renameat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+* perform rename operation using parameters from io_rename context,
+* warn if non-blocking flag is set,
+* call do_renameat2 with old/new directory fds and paths,
+* clear cleanup flag and set the request result
+*/
 int io_renameat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_rename *ren = io_kiocb_to_cmd(req, struct io_rename);
@@ -93,6 +104,7 @@ int io_renameat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*release allocated old and new pathnames for rename request*/
 void io_renameat_cleanup(struct io_kiocb *req)
 {
 	struct io_rename *ren = io_kiocb_to_cmd(req, struct io_rename);
@@ -101,6 +113,12 @@ void io_renameat_cleanup(struct io_kiocb *req)
 	putname(ren->newpath);
 }
 
+/*
+ * prepare io_unlink request by validating sqe fields and copying filename from userspace,
+ * sets directory fd and unlink flags,
+ * enforces async execution and cleanup requirements,
+ * returns 0 on success or error code on validation or path copy failure
+ */
 int io_unlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_unlink *un = io_kiocb_to_cmd(req, struct io_unlink);
@@ -127,6 +145,11 @@ int io_unlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+* validate unlink request fields and copy filename from userspace,
+* set directory fd and unlink flags,
+* mark request for cleanup and force async execution
+*/
 int io_unlinkat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_unlink *un = io_kiocb_to_cmd(req, struct io_unlink);
@@ -144,6 +167,7 @@ int io_unlinkat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*release allocated filename for unlink request*/
 void io_unlinkat_cleanup(struct io_kiocb *req)
 {
 	struct io_unlink *ul = io_kiocb_to_cmd(req, struct io_unlink);
@@ -151,6 +175,11 @@ void io_unlinkat_cleanup(struct io_kiocb *req)
 	putname(ul->filename);
 }
 
+/*
+* validate mkdir request fields and copy directory name from userspace,
+* set directory fd and mode,
+* mark request for cleanup and force async execution
+*/
 int io_mkdirat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_mkdir *mkd = io_kiocb_to_cmd(req, struct io_mkdir);
@@ -188,6 +217,12 @@ int io_mkdirat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+* perform mkdir operation using parameters from io_mkdir context,
+* warn if non-blocking flag is set,
+* call do_mkdirat with directory fd, name, and mode,
+* clear cleanup flag and set the request result
+*/
 void io_mkdirat_cleanup(struct io_kiocb *req)
 {
 	struct io_mkdir *md = io_kiocb_to_cmd(req, struct io_mkdir);
@@ -195,6 +230,11 @@ void io_mkdirat_cleanup(struct io_kiocb *req)
 	putname(md->filename);
 }
 
+/*
+* validate symlink request fields and copy old/new pathnames from userspace,
+* set new directory fd,
+* mark request for cleanup and force async execution
+*/
 int io_symlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_link *sl = io_kiocb_to_cmd(req, struct io_link);
@@ -224,6 +264,12 @@ int io_symlinkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+* perform symlink operation using parameters from io_link context,
+* warn if non-blocking flag is set,
+* call do_symlinkat with old path, new directory fd, and new path,
+* clear cleanup flag and set the request result
+*/
 int io_symlinkat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_link *sl = io_kiocb_to_cmd(req, struct io_link);
@@ -238,6 +284,11 @@ int io_symlinkat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*
+* validate link request fields and copy old/new pathnames from userspace,
+* set old/new directory fds and link flags,
+* mark request for cleanup and force async execution
+*/
 int io_linkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_link *lnk = io_kiocb_to_cmd(req, struct io_link);
@@ -269,6 +320,12 @@ int io_linkat_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/*
+* perform link operation using parameters from io_link context,
+* warn if non-blocking flag is set,
+* call do_linkat with old/new directory fds, paths, and flags,
+* clear cleanup flag and set the request result
+*/
 int io_linkat(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_link *lnk = io_kiocb_to_cmd(req, struct io_link);
@@ -284,6 +341,7 @@ int io_linkat(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/*release allocated old and new pathnames for link request*/
 void io_link_cleanup(struct io_kiocb *req)
 {
 	struct io_link *sl = io_kiocb_to_cmd(req, struct io_link);
