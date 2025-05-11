@@ -25,6 +25,10 @@ enum {
 	IO_EVENTFD_OP_SIGNAL_BIT,
 };
 
+/* RCU callback function that cleans up eventfd resources after all references are gone. 
+Gets the io_ev_fd structure from the RCU head, releases the eventfd context, 
+and frees the memory allocated for the structure. */
+
 static void io_eventfd_free(struct rcu_head *rcu)
 {
 	struct io_ev_fd *ev_fd = container_of(rcu, struct io_ev_fd, rcu);
@@ -33,12 +37,16 @@ static void io_eventfd_free(struct rcu_head *rcu)
 	kfree(ev_fd);
 }
 
+/* Decreases the reference count of an eventfd. If count reaches zero, 
+schedules it for cleanup after RCU grace period. */
 static void io_eventfd_put(struct io_ev_fd *ev_fd)
 {
 	if (refcount_dec_and_test(&ev_fd->refs))
 		call_rcu(&ev_fd->rcu, io_eventfd_free);
 }
 
+/* Safely signals an eventfd from RCU context. Notifies any waiting processes with the 
+EPOLL_URING_WAKE flag, then reduces reference count. */
 static void io_eventfd_do_signal(struct rcu_head *rcu)
 {
 	struct io_ev_fd *ev_fd = container_of(rcu, struct io_ev_fd, rcu);
@@ -47,6 +55,7 @@ static void io_eventfd_do_signal(struct rcu_head *rcu)
 	io_eventfd_put(ev_fd);
 }
 
+/* Finishes using an eventfd. Optionally decreases reference count and releases the RCU lock. */
 static void io_eventfd_release(struct io_ev_fd *ev_fd, bool put_ref)
 {
 	if (put_ref)
@@ -112,6 +121,7 @@ static struct io_ev_fd *io_eventfd_grab(struct io_ring_ctx *ctx)
 	return NULL;
 }
 
+/* Notifies any waiting processes through eventfd that something happened. Gets the eventfd, signals it, and properly releases it. */
 void io_eventfd_signal(struct io_ring_ctx *ctx)
 {
 	struct io_ev_fd *ev_fd;
@@ -121,6 +131,7 @@ void io_eventfd_signal(struct io_ring_ctx *ctx)
 		io_eventfd_release(ev_fd, __io_eventfd_signal(ev_fd));
 }
 
+/* Only signals the eventfd if new completions have happened since last notification. Prevents unnecessary wakeups. */
 void io_eventfd_flush_signal(struct io_ring_ctx *ctx)
 {
 	struct io_ev_fd *ev_fd;
@@ -150,6 +161,9 @@ void io_eventfd_flush_signal(struct io_ring_ctx *ctx)
 	}
 }
 
+/* Registers a user-provided eventfd with an io_ring_ctx for to notify completion. 
+Gets the file descriptor from user space, allocates and initializes the eventfd structure, 
+and connects it to the io_ring_ctx with proper RCU protection. */
 int io_eventfd_register(struct io_ring_ctx *ctx, void __user *arg,
 			unsigned int eventfd_async)
 {
@@ -189,6 +203,7 @@ int io_eventfd_register(struct io_ring_ctx *ctx, void __user *arg,
 	return 0;
 }
 
+/* Removes a previously registered eventfd from an io_uring. Returns success or error if no eventfd was registered. */
 int io_eventfd_unregister(struct io_ring_ctx *ctx)
 {
 	struct io_ev_fd *ev_fd;
