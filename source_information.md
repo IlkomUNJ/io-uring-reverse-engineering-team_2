@@ -109,53 +109,53 @@ Optimizes data reception in networking by doing zero-copy. This speeds up receiv
 
 
 ## Headers
-## advice.h
+### advice.h
 Declares function prototypes and structures for io_madvice and io_fadvice operations. Contains definitions for memory and file advice parameters that control caching behavior. Exposes the interface for advice-related operations without implementation details.
 
-## alloc_cache.h
+### alloc_cache.h
 Defines structures and interfaces for the io_uring memory allocation cache system. Contains declarations for cache creation, management, and memory pool functions. Provides the API for optimized memory allocation used by io_uring operations.
 
-## cancel.h
+### cancel.h
 Declares function prototypes and data structures for cancellation operations in io_uring. Defines cancellation flags and parameters used to identify and terminate pending operations. Provides the public interface for the cancellation subsystem.
 
-## epoll.h
+### epoll.h
 Contains definitions and function declarations for epoll integration with io_uring. Defines structures that map epoll operations to the io_uring interface. Declares conversion functions between epoll events and io_uring completion formats.
 
-## eventfd.h
+### eventfd.h
 Declares interfaces for eventfd notification mechanisms in io_uring. Defines constants and structures for eventfd operations and callbacks. Provides the API for creating and managing eventfd notifications through io_uring.
 
-## fdinfo.h
+### fdinfo.h
 Defines structures and functions for tracking file descriptor information. Contains declarations for file descriptor state tracking and reference counting. Provides interfaces for mapping file descriptors to internal io_uring representations.
 
-## filetable.h
+### filetable.h
 Declares structures and functions for the fixed file table feature. Defines constants for file table limitations and access modes. Contains interfaces for registering, looking up, and managing pre-registered file descriptors.
 
-## fs.h
+### fs.h
 Defines common filesystem operation interfaces for io_uring. Contains declarations for directory and file path handling functions. Provides abstractions over filesystem operations used across multiple io_uring commands.
 
-## futex.h
+### futex.h
 Declares structures and constants for futex operations through io_uring. Defines parameters and flags for wait and wake operations. Contains interfaces for asynchronous futex operations that integrate with the io_uring subsystem.
 
-## io_uring.h
+### io_uring.h
 Core header that defines the main io_uring data structures and APIs. Contains definitions for submission and completion queue entries, operation codes, and feature flags. Declares the core functions for ring setup, submission, and completion processing.
 
-## io-wq.h
+### io-wq.h
 Declares interfaces for the io_uring workqueue system. Defines structures for worker threads and work items. Contains declarations for workqueue creation, management, and work distribution APIs.
 
-## kbuf.h
+### kbuf.h
 Defines structures and functions for kernel buffer management. Contains declarations for buffer allocation, registration, and mapping between userspace and kernel. Provides interfaces for zero-copy optimizations through pre-registered buffers.
 
-## memmap.h
+### memmap.h
 Declares structures and constants for memory mapping operations. Defines flags and parameters for mmap-related io_uring commands. Contains interfaces for memory management operations through the io_uring subsystem.
 
-## msg_ring.h
+### msg_ring.h
 Defines data structures and constants for message passing between io_uring instances. Contains declarations for message formats and ring-to-ring communication protocols. Provides interfaces for inter-ring message delivery and reception.
 
-## napi.h
+### napi.h
 Declares interfaces for Network API integration with io_uring. Contains structures for integrating with the Linux networking stack's polling mechanisms. Defines functions for optimized packet processing through io_uring.
 
-## net.h
+### net.h
 Defines structures and constants for networking operations in io_uring. Contains declarations for socket operations and network buffer handling. Provides interfaces for asynchronous network I/O through io_uring.
 
-## nop.h
+### nop.h
 Declares minimal interfaces for the no-operation command. Contains constants and structures for NOP operation parameters. Provides declarations for the simplest possible io_uring operation used for testing and benchmarking. 
