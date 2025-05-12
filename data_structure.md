@@ -640,6 +640,98 @@ io_async_rw | io_uring/rw.h | struct iou_vec			vec, size_t				bytes_done, struct
 | | | | __io_read | io_uring/rw.c | declaration
 | | | | io_write | io_uring/rw.c | declaration
 | | | | io_rw_cache_free | io_uring/rw.c | declaration
+| `io_wq_work_node | `linux/io_uring_types.h | `struct io_wq_work_node *next         | `wq_list_add_after     | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_add_tail      | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_add_head      | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_cut           | `io_uring/io_slist.h | parameter, local var    |
+|                   |                          |                                        | `wq_stack_add_head     | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_del          | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_stack_extract      | `io_uring/io_slist.h | return value            |
+| `io_wq_work_list | `linux/io_uring_types.h | `struct io_wq_work_node *first, *last | `wq_list_add_tail      | `io_uring/io_slist.h | parameter, local var    |
+|                   |                          |                                        | `wq_list_add_head      | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_add_after     | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_cut           | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `__wq_list_splice      | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_splice        | `io_uring/io_slist.h | parameter               |
+|                   |                          |                                        | `wq_list_del           | `io_uring/io_slist.h | parameter               |
+| `io_wq_work      | `linux/io_uring_types.h | `struct io_wq_work_node list          | `wq_next_work          | `io_uring/io_slist.h | parameter, return value |
+| `io_splice    | io_uring/splice.c | struct file *file_out, loff_t off_out, loff_t off_in, u64 len, int splice_fd_in, unsigned int flags, struct io_rsrc_node *rsrc_node | `__io_splice_prep      | `io_uring/splice.c | Local variable via `io_kiocb_to_cmd() |
+|                |                     |                                                                                                                                                   | `io_tee_prep           | `io_uring/splice.c | Local variable via `io_kiocb_to_cmd() |
+|                |                     |                                                                                                                                                   | `io_splice_prep        | `io_uring/splice.c | Local variable via `io_kiocb_to_cmd() |
+|                |                     |                                                                                                                                                   | `io_tee                | `io_uring/splice.c | Local variable via `io_kiocb_to_cmd() |
+|                |                     |                                                                                                                                                   | `io_splice            | `io_uring/splice.c | Local variable via `io_kiocb_to_cmd() |
+|                |                     |                                                                                                                                                   | `io_splice_cleanup     | `io_uring/splice.c | Local variable via `io_kiocb_to_cmd() |
+|                |                     |                                                                                                                                                   | io_splice_get_file    | io_uring/splice.c | Local variable via io_kiocb_to_cmd() |
+io_tee         | io_uring/splice.h | struct io_kiocb *req, const struct io_uring_sqe *sqe | io_tee_prep           | io_uring/splice.c   | function definition
+|               |                |                                                | io_tee                | io_uring/splice.c   | function definition
+io_splice      | io_uring/splice.h | struct io_kiocb *req, const struct io_uring_sqe *sqe | io_splice_prep        | io_uring/splice.c   | function definition
+|               |                |                                                | io_splice             | io_uring/splice.c   | function definition
+|               |                |                                                | io_splice_cleanup     | io_uring/splice.c   | function definition
+io_sq_data       | io_uring/sqpoll.c | task_struct, refcount_t, atomic_t, mutex, wait_queue_head_t, completion, list_head, unsigned long, int, pid_t | io_sq_thread_unpark | io_uring/sqpoll.c | function parameter
+| | | | io_sq_thread_park | io_uring/sqpoll.c | function parameter
+| | | | io_sq_thread_stop | io_uring/sqpoll.c | function parameter
+| | | | io_put_sq_data | io_uring/sqpoll.c | function parameter
+| | | | io_sqd_update_thread_idle | io_uring/sqpoll.c | local variable
+| | | | io_sq_thread_finish | io_uring/sqpoll.c | local variable
+| | | | io_attach_sq_data | io_uring/sqpoll.c | return value, local variable
+| | | | io_get_sq_data | io_uring/sqpoll.c | return value, local variable
+| | | | io_sqd_events_pending | io_uring/sqpoll.c | function parameter
+| | | | io_sqd_handle_event | io_uring/sqpoll.c | function parameter
+| | | | io_sq_thread | io_uring/sqpoll.c | function parameter
+| | | | io_sq_offload_create | io_uring/sqpoll.c | local variable
+| | | | io_sqpoll_wq_cpu_affinity | io_uring/sqpoll.c | local variable
+io_sq_data       | io_uring/sqpoll.h | refcount_t, atomic_t, mutex, list_head, task_struct, wait_queue_head_t, unsigned, int, pid_t, u64, unsigned long, completion | io_sq_offload_create | io_uring/sqpoll.c | local variable (via function declaration)
+| | | | io_sq_thread_finish | io_uring/sqpoll.c | local variable (via function declaration)
+| | | | io_sq_thread_stop | io_uring/sqpoll.h | function parameter
+| | | | io_sq_thread_park | io_uring/sqpoll.h | function parameter
+| | | | io_sq_thread_unpark | io_uring/sqpoll.h | function parameter
+| | | | io_put_sq_data | io_uring/sqpoll.h | function parameter
+| | | | io_sqpoll_wait_sq | io_uring/sqpoll.c | local variable (via function declaration)
+| | | | io_sqpoll_wq_cpu_affinity | io_uring/sqpoll.c | local variable (via function declaration)
+io_statx         | io_uring/statx.c | file, int, unsigned int, unsigned int, filename, statx __user* | io_statx_prep | io_uring/statx.c | local variable
+| | | | io_statx | io_uring/statx.c | local variable
+| | | | io_statx_cleanup | io_uring/statx.c | local variable
+io_statx         | io_uring/statx.h | (declaration only) | io_statx_prep | io_uring/statx.c | local variable (via function declaration)
+| | | | io_statx | io_uring/statx.c | local variable (via function declaration)
+| | | | io_statx_cleanup | io_uring/statx.c | local variable (via function declaration)
+io_sync          | io_uring/sync.c | file, loff_t, loff_t, int, int | io_sfr_prep | io_uring/sync.c | local variable
+| | | | io_sync_file_range | io_uring/sync.c | local variable
+| | | | io_fsync_prep | io_uring/sync.c | local variable
+| | | | io_fsync | io_uring/sync.c | local variable
+| | | | io_fallocate_prep | io_uring/sync.c | local variable
+| | | | io_fallocate | io_uring/sync.c | local variable
+io_sync          | io_uring/sync.h | (declaration only) | io_sfr_prep | io_uring/sync.c | local variable (via function declaration)
+| | | | io_sync_file_range | io_uring/sync.c | local variable (via function declaration)
+| | | | io_fsync_prep | io_uring/sync.c | local variable (via function declaration)
+| | | | io_fsync | io_uring/sync.c | local variable (via function declaration)
+| | | | io_fallocate_prep | io_uring/sync.c | local variable (via function declaration)
+| | | | io_fallocate | io_uring/sync.c | local variable (via function declaration)
+io_uring_task    | io_uring/tctx.c | io_wq, xarray, wait_queue_head_t, atomic_t, llist_head, task_struct, percpu_counter, struct file*[], io_ring_ctx* | __io_uring_free | io_uring/tctx.c | local variable
+| | | | io_uring_alloc_task_context | io_uring/tctx.c | local variable
+| | | | __io_uring_add_tctx_node | io_uring/tctx.c | local variable
+| | | | __io_uring_add_tctx_node_from_submit | io_uring/tctx.c | local variable
+| | | | io_uring_del_tctx_node | io_uring/tctx.c | local variable
+| | | | io_uring_clean_tctx | io_uring/tctx.c | function parameter
+| | | | io_uring_unreg_ringfd | io_uring/tctx.c | local variable
+| | | | io_ring_add_registered_file | io_uring/tctx.c | function parameter
+| | | | io_ring_add_registered_fd | io_uring/tctx.c | local variable
+| | | | io_ringfd_register | io_uring/tctx.c | local variable
+| | | | io_ringfd_unregister | io_uring/tctx.c | local variable
+io_tctx_node     | io_uring/tctx.c | io_ring_ctx, task_struct, list_head | __io_uring_add_tctx_node | io_uring/tctx.c | local variable
+| | | | io_uring_del_tctx_node | io_uring/tctx.c | local variable
+| | | | io_uring_clean_tctx | io_uring/tctx.c | local variable
+io_wq_data       | io_uring/tctx.c | io_wq_hash, task_struct, work functions | io_init_wq_offload | io_uring/tctx.c | local variable
+io_tctx_node     | io_uring/tctx.h | list_head, task_struct, io_ring_ctx | io_uring_add_tctx_node | io_uring/tctx.c | local variable (via function declarations)
+| | | | io_uring_del_tctx_node | io_uring/tctx.h | local variable (via function declaration)
+| | | | __io_uring_add_tctx_node | io_uring/tctx.h | local variable (via function declaration)
+| | | | __io_uring_add_tctx_node_from_submit | io_uring/tctx.h | local variable (via function declaration)
+| | | | io_uring_clean_tctx | io_uring/tctx.h | local variable (via function declaration)
+
+io_uring_task    | io_uring/tctx.h | (declaration only) | io_uring_alloc_task_context | io_uring/tctx.c | local variable (via function declaration)
+| | | | io_uring_clean_tctx | io_uring/tctx.h | function parameter
+| | | | io_uring_add_tctx_node | io_uring/tctx.h | local variable
+| | | | io_ringfd_register | io_uring/tctx.h | local variable (via function declaration)
+| | | | io_ringfd_unregister | io_uring/tctx.h | local variable (via function declaration)
 
 If the following row value in a column is missing, assume the value is the same with the previous row in the same column. 
 Continue until all data structures documented properly.
