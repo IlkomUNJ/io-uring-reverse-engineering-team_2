@@ -764,12 +764,127 @@ io_tctx_node     | io_uring/tctx.h | list_head, task_struct, io_ring_ctx | io_ur
 | | | | __io_uring_add_tctx_node | io_uring/tctx.h | local variable (via function declaration)
 | | | | __io_uring_add_tctx_node_from_submit | io_uring/tctx.h | local variable (via function declaration)
 | | | | io_uring_clean_tctx | io_uring/tctx.h | local variable (via function declaration)
-
 io_uring_task    | io_uring/tctx.h | (declaration only) | io_uring_alloc_task_context | io_uring/tctx.c | local variable (via function declaration)
 | | | | io_uring_clean_tctx | io_uring/tctx.h | function parameter
 | | | | io_uring_add_tctx_node | io_uring/tctx.h | local variable
 | | | | io_ringfd_register | io_uring/tctx.h | local variable (via function declaration)
 | | | | io_ringfd_unregister | io_uring/tctx.h | local variable (via function declaration)
+io_timeout | io_uring/timeout.c |  file			*file, u32				off, u32				target_seq, u32				repeats,  list_head		list, /* head of the link, used by linked timeouts only */ 	 io_kiocb			*head, /* for linked completions */ 	 io_kiocb			*prev | io_eopnotsupp_prep | io_uring/opdef.c | assignment or return
+ |  |  |  | ERR_PTR | io_uring/timeout.c | function call
+ |  |  |  | __io_timeout_prep | io_uring/timeout.c | variable declaration
+ |  |  |  | io_disarm_next | io_uring/timeout.c | variable declaration
+ |  |  |  | io_flush_killed_timeouts | io_uring/timeout.c | variable declaration
+ |  |  |  | io_flush_timeouts | io_uring/timeout.c | variable declaration
+ |  |  |  | io_is_timeout_noseq | io_uring/timeout.c | variable declaration
+ |  |  |  | io_kill_timeout | io_uring/timeout.c | variable declaration
+ |  |  |  | io_kill_timeouts | io_uring/timeout.c | variable declaration
+ |  |  |  | io_link_timeout_fn | io_uring/timeout.c | variable declaration
+ |  |  |  | io_linked_timeout_update | io_uring/timeout.c | variable declaration
+ |  |  |  | io_put_req | io_uring/timeout.c | variable declaration
+ |  |  |  | io_queue_linked_timeout | io_uring/timeout.c | variable declaration
+ |  |  |  | io_req_task_link_timeout | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout | io_uring/timeout.c | function call
+ |  |  |  | io_timeout_complete | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_fn | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_update | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout | io_uring/timeout.h | function call
+io_timeout_rem | io_uring/timeout.c |  file			*file, u64				addr, /* timeout update */ 	 timespec64		ts, u32				flags, bool				ltimeout | io_timeout_remove | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_remove_prep | io_uring/timeout.c | variable declaration
+io_timeout_data | io_uring/timeout.h |  io_kiocb			*req,  hrtimer			timer,  timespec64		ts, enum hrtimer_mode		mode, u32				flags | io_eopnotsupp_prep | io_uring/opdef.c | function call
+ |  |  |  | __io_timeout_prep | io_uring/timeout.c | variable declaration
+ |  |  |  | io_disarm_next | io_uring/timeout.c | variable declaration
+ |  |  |  | io_is_timeout_noseq | io_uring/timeout.c | variable declaration
+ |  |  |  | io_kill_timeout | io_uring/timeout.c | variable declaration
+ |  |  |  | io_link_timeout_fn | io_uring/timeout.c | variable declaration
+ |  |  |  | io_linked_timeout_update | io_uring/timeout.c | variable declaration
+ |  |  |  | io_queue_linked_timeout | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_complete | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_finish | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_fn | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_get_clock | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_update | io_uring/timeout.c | variable declaration
+io_ftrunc | io_uring/truncate.c |  file			*file, loff_t				len | io_ftruncate | io_uring/truncate.c | variable declaration
+ |  |  |  | io_ftruncate_prep | io_uring/truncate.c | variable declaration
+io_async_cmd | io_uring/uring_cmd.h |  io_uring_cmd_data	data,  iou_vec			vec,  io_uring_sqe		sqes[2] | io_free_alloc_caches | io_uring/io_uring.c | function call
+ |  |  |  | io_eopnotsupp_prep | io_uring/opdef.c | function call
+ |  |  |  | io_cmd_cache_free | io_uring/uring_cmd.c | variable declaration
+ |  |  |  | io_req_uring_cleanup | io_uring/uring_cmd.c | variable declaration
+ |  |  |  | io_uring_cmd_import_fixed_vec | io_uring/uring_cmd.c | variable declaration
+ |  |  |  | io_uring_cmd_prep_setup | io_uring/uring_cmd.c | variable declaration
+io_waitid | io_uring/waitid.c |  file *file, int which, pid_t upid, int options, atomic_t refs,  wait_queue_head *head,  siginfo __user *infop,  waitid_info info | io_eopnotsupp_prep | io_uring/opdef.c | assignment or return
+ |  |  |  | __io_waitid_cancel | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid | io_uring/waitid.c | function call
+ |  |  |  | io_waitid_cb | io_uring/waitid.c | declaration
+ |  |  |  | io_waitid_compat_copy_si | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_complete | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_copy_si | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_drop_issue_ref | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_prep | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_wait | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid | io_uring/waitid.h | function call
+io_waitid_async | io_uring/waitid.h |  io_kiocb *req,  wait_opts wo | io_eopnotsupp_prep | io_uring/opdef.c | function call
+ |  |  |  | __io_waitid_cancel | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_cb | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_drop_issue_ref | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_free | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_prep | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid_wait | io_uring/waitid.c | variable declaration
+io_xattr | io_uring/xattr.c |  file			*file,  kernel_xattr_ctx		ctx,  filename			*filename | __io_getxattr_prep | io_uring/xattr.c | variable declaration
+ |  |  |  | __io_setxattr_prep | io_uring/xattr.c | variable declaration
+ |  |  |  | io_fgetxattr | io_uring/xattr.c | variable declaration
+ |  |  |  | io_fsetxattr | io_uring/xattr.c | variable declaration
+ |  |  |  | io_getxattr | io_uring/xattr.c | variable declaration
+ |  |  |  | io_getxattr_prep | io_uring/xattr.c | variable declaration
+ |  |  |  | io_setxattr | io_uring/xattr.c | variable declaration
+ |  |  |  | io_setxattr_prep | io_uring/xattr.c | variable declaration
+ |  |  |  | io_xattr_cleanup | io_uring/xattr.c | variable declaration
+io_zcrx_args | io_uring/zcrx.c |  io_kiocb		*req,  io_zcrx_ifq	*ifq,  socket		*sock, unsigned		nr_skbs | io_zcrx_copy_frag | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_sync_for_device | io_uring/zcrx.c | declaration
+ |  |  |  | io_zcrx_tcp_recvmsg | io_uring/zcrx.c | declaration
+io_zcrx_area | io_uring/zcrx.h |  net_iov_area	nia,  io_zcrx_ifq	*ifq, atomic_t		*user_refs, bool			is_mapped, u16			area_id,  page		**pages, /* freelist */ 	spinlock_t		freelist_lock ____cacheline_aligned_in_smp, u32			free_count, u32			*freelist | __io_zcrx_unmap_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | container_of | io_uring/zcrx.c | function call
+ |  |  |  | io_pp_zc_destroy | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_unregister_zcrx_ifqs | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_copy_chunk | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_create_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_free_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_get_niov_uref | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_map_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_queue_cqe | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_refill_slow | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_return_niov_freelist | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_ring_refill | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_scrub | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_sync_for_device | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_unmap_area | io_uring/zcrx.c | variable declaration
+io_zcrx_ifq | io_uring/zcrx.h |  io_ring_ctx		*ctx,  io_zcrx_area		*area,  io_uring			*rq_ring,  io_uring_zcrx_rqe	*rqes, u32				rq_entries, u32				cached_rq_head, spinlock_t			rq_lock, u32				if_rxq,  device			*dev,  net_device		*netdev, netdevice_tracker		netdev_tracker, spinlock_t			lock | io_close_queue | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_free_rbuf_ring | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_pp_uninstall | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_pp_zc_alloc_netmems | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_pp_zc_destroy | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_pp_zc_init | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_register_zcrx_ifq | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_unregister_zcrx_ifqs | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_copy_chunk | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_copy_frag | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_create_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_drop_netdev | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_free_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_get_niov_uref | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_ifq_free | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_map_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_queue_cqe | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_refill_slow | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_ring_refill | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_rqring_entries | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_scrub | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_sync_for_device | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_zcrx_unmap_area | io_uring/zcrx.c | variable declaration
+ |  |  |  | min | io_uring/zcrx.c | variable declaration
+ |  |  |  | io_shutdown_zcrx_ifqs | io_uring/zcrx.h | variable declaration
 
+ 
 If the following row value in a column is missing, assume the value is the same with the previous row in the same column. 
 Continue until all data structures documented properly.
