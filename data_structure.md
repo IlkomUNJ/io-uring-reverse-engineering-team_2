@@ -3,6 +3,44 @@ The objective of this task is to document all internal data structures defined i
 
 Structure name | Defined in | Attributes | Caller Functions Source | source caller | usage
 ---------------|------------|------------|-------------------------|---------------|-------------------
+io_fadvise       | io_uring/advise.c | file, u64, u64, u32 | io_fadvise_prep | io_uring/advise.c | local variable
+| | | | io_fadvise_force_async | io_uring/advise.c | function parameter
+| | | | io_fadvise | io_uring/advise.c | local variable
+io_madvise       | io_uring/advise.c | file, u64, u64, u32 | io_madvise_prep | io_uring/advise.c | local variable
+| | | | io_madvise | io_uring/advise.c | local variable
+io_fadvise       | io_uring/advise.h | (declaration only) | io_fadvise_prep | io_uring/advise.c | local variable (via function declaration)
+| | | | io_fadvise | io_uring/advise.c | local variable (via function declaration)
+io_madvise       | io_uring/advise.h | (declaration only) | io_madvise_prep | io_uring/advise.c | local variable (via function declaration)
+| | | | io_madvise | io_uring/advise.c | local variable (via function declaration)
+io_alloc_cache   | io_uring/alloc_cache.c | void**, unsigned int, unsigned int, unsigned int | io_alloc_cache_free | io_uring/alloc_cache.c | function parameter
+| | | | io_alloc_cache_init | io_uring/alloc_cache.c | function parameter
+| | | | io_cache_alloc_new | io_uring/alloc_cache.c | function parameter
+io_alloc_cache   | io_uring/alloc_cache.h | void**, unsigned int, unsigned int, unsigned int | io_alloc_cache_free | io_uring/alloc_cache.c | function parameter (via function declaration)
+| | | | io_alloc_cache_init | io_uring/alloc_cache.c | function parameter (via function declaration)
+| | | | io_cache_alloc_new | io_uring/alloc_cache.c | function parameter (via function declaration)
+| | | | io_alloc_cache_put | io_uring/alloc_cache.h | function parameter
+| | | | io_alloc_cache_get | io_uring/alloc_cache.h | function parameter
+| | | | io_cache_alloc | io_uring/alloc_cache.h | function parameter
+| | | | io_cache_free | io_uring/alloc_cache.h | function parameter
+io_cancel        | io_uring/cancel.c | file, u64, u32, s32, u8 | io_async_cancel_prep | io_uring/cancel.c | local variable
+| | | | io_async_cancel | io_uring/cancel.c | local variable
+io_cancel_data   | io_uring/cancel.h | io_ring_ctx, union (u64/file*), u8, u32, int | io_cancel_req_match | io_uring/cancel.c | function parameter
+| | | | io_async_cancel_one | io_uring/cancel.c | function parameter
+| | | | io_try_cancel | io_uring/cancel.c | function parameter
+| | | | __io_async_cancel | io_uring/cancel.c | function parameter
+| | | | __io_sync_cancel | io_uring/cancel.c | function parameter
+| | | | io_sync_cancel | io_uring/cancel.c | local variable
+| | | | io_cancel_remove_all | io_uring/cancel.h | function parameter (via function declaration)
+| | | | io_cancel_remove | io_uring/cancel.h | function parameter (via function declaration)
+| | | | io_cancel_match_sequence | io_uring/cancel.h | function parameter
+io_epoll         | io_uring/epoll.c | file, int, int, int, epoll_event | io_epoll_ctl_prep | io_uring/epoll.c | local variable
+| | | | io_epoll_ctl | io_uring/epoll.c | local variable
+io_epoll_wait    | io_uring/epoll.c | file, int, epoll_event __user* | io_epoll_wait_prep | io_uring/epoll.c | local variable
+| | | | io_epoll_wait | io_uring/epoll.c | local variable
+io_epoll         | io_uring/epoll.h | (declaration only) | io_epoll_ctl_prep | io_uring/epoll.c | local variable (via function declaration)
+| | | | io_epoll_ctl | io_uring/epoll.c | local variable (via function declaration)
+io_epoll_wait    | io_uring/epoll.h | (declaration only) | io_epoll_wait_prep | io_uring/epoll.c | local variable (via function declaration)
+| | | | io_epoll_wait | io_uring/epoll.c | local variable (via function declaration)
 io_ev_fd       | io_uring/eventfd.c | eventfd_ctx, uint, uint, refcount_t, atomic_t, rcu_head | io_eventfd_free | io_uring/eventfd.c | local variable
 | | | | io_eventfd_put | io_uring/eventfd.c | function parameter
 | | | | io_eventfd_do_signal | io_uring/eventfd.c | local variable, function parameter
