@@ -35,6 +35,7 @@ struct io_timeout_rem {
 	bool				ltimeout;
 };
 
+/* Check if timeout is "no sequence" or multishot. */
 static inline bool io_is_timeout_noseq(struct io_kiocb *req)
 {
 	struct io_timeout *timeout = io_kiocb_to_cmd(req, struct io_timeout);
@@ -43,6 +44,7 @@ static inline bool io_is_timeout_noseq(struct io_kiocb *req)
 	return !timeout->off || data->flags & IORING_TIMEOUT_MULTISHOT;
 }
 
+/* Release a reference to the io_kiocb request. */
 static inline void io_put_req(struct io_kiocb *req)
 {
 	if (req_ref_put_and_test(req)) {
@@ -51,6 +53,7 @@ static inline void io_put_req(struct io_kiocb *req)
 	}
 }
 
+/* Determine if timeout request is finished. */
 static inline bool io_timeout_finish(struct io_timeout *timeout,
 				     struct io_timeout_data *data)
 {
@@ -63,8 +66,10 @@ static inline bool io_timeout_finish(struct io_timeout *timeout,
 	return true;
 }
 
+/* Forward declaration of timer callback */
 static enum hrtimer_restart io_timeout_fn(struct hrtimer *timer);
 
+/* Handles completion or rearming of multishot timeouts. */
 static void io_timeout_complete(struct io_kiocb *req, io_tw_token_t tw)
 {
 	struct io_timeout *timeout = io_kiocb_to_cmd(req, struct io_timeout);
@@ -85,6 +90,7 @@ static void io_timeout_complete(struct io_kiocb *req, io_tw_token_t tw)
 	io_req_task_complete(req, tw);
 }
 
+/* Flush and complete killed timeouts. */
 static __cold bool io_flush_killed_timeouts(struct list_head *list, int err)
 {
 	if (list_empty(list))
@@ -105,6 +111,7 @@ static __cold bool io_flush_killed_timeouts(struct list_head *list, int err)
 	return true;
 }
 
+/* Cancel a timeout request and move it to a list. */
 static void io_kill_timeout(struct io_kiocb *req, struct list_head *list)
 	__must_hold(&req->ctx->timeout_lock)
 {
@@ -119,6 +126,7 @@ static void io_kill_timeout(struct io_kiocb *req, struct list_head *list)
 	}
 }
 
+/* Moves expired timeouts to a local list and flushes them. */
 __cold void io_flush_timeouts(struct io_ring_ctx *ctx)
 {
 	struct io_timeout *timeout, *tmp;
@@ -154,6 +162,7 @@ __cold void io_flush_timeouts(struct io_ring_ctx *ctx)
 	io_flush_killed_timeouts(&list, 0);
 }
 
+/* Sets failure result on all linked requests and completes them. */
 static void io_req_tw_fail_links(struct io_kiocb *link, io_tw_token_t tw)
 {
 	io_tw_lock(link->ctx, tw);
@@ -170,6 +179,7 @@ static void io_req_tw_fail_links(struct io_kiocb *link, io_tw_token_t tw)
 	}
 }
 
+/* Mark and fail all linked requests. */
 static void io_fail_links(struct io_kiocb *req)
 	__must_hold(&req->ctx->completion_lock)
 {
@@ -194,6 +204,7 @@ static void io_fail_links(struct io_kiocb *req)
 	req->link = NULL;
 }
 
+/* Remove the next linked request. */
 static inline void io_remove_next_linked(struct io_kiocb *req)
 {
 	struct io_kiocb *nxt = req->link;
@@ -202,6 +213,7 @@ static inline void io_remove_next_linked(struct io_kiocb *req)
 	nxt->link = NULL;
 }
 
+/* Disarm the next linked timeout. */
 void io_disarm_next(struct io_kiocb *req)
 	__must_hold(&req->ctx->completion_lock)
 {
@@ -228,6 +240,7 @@ void io_disarm_next(struct io_kiocb *req)
 		io_fail_links(req);
 }
 
+/* Disarm a linked timeout. */
 struct io_kiocb *__io_disarm_linked_timeout(struct io_kiocb *req,
 					    struct io_kiocb *link)
 	__must_hold(&req->ctx->completion_lock)
@@ -246,6 +259,8 @@ struct io_kiocb *__io_disarm_linked_timeout(struct io_kiocb *req,
 	return NULL;
 }
 
+/* Removes the timeout from the list, increments timeout counter,
+ * sets failure if not success, posts -ETIME result, and schedules completion */
 static enum hrtimer_restart io_timeout_fn(struct hrtimer *timer)
 {
 	struct io_timeout_data *data = container_of(timer,
@@ -270,6 +285,7 @@ static enum hrtimer_restart io_timeout_fn(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
+/* Extract a timeout request matching cancel data. */
 static struct io_kiocb *io_timeout_extract(struct io_ring_ctx *ctx,
 					   struct io_cancel_data *cd)
 	__must_hold(&ctx->timeout_lock)
@@ -297,6 +313,7 @@ static struct io_kiocb *io_timeout_extract(struct io_ring_ctx *ctx,
 	return req;
 }
 
+/* Cancel a timeout request. */
 int io_timeout_cancel(struct io_ring_ctx *ctx, struct io_cancel_data *cd)
 	__must_hold(&ctx->completion_lock)
 {
@@ -312,6 +329,8 @@ int io_timeout_cancel(struct io_ring_ctx *ctx, struct io_cancel_data *cd)
 	return 0;
 }
 
+/* If previous linked request exists, tries to cancel it and completes current.
+ * Otherwise completes current with -ETIME. */
 static void io_req_task_link_timeout(struct io_kiocb *req, io_tw_token_t tw)
 {
 	struct io_timeout *timeout = io_kiocb_to_cmd(req, struct io_timeout);
@@ -338,6 +357,8 @@ static void io_req_task_link_timeout(struct io_kiocb *req, io_tw_token_t tw)
 	}
 }
 
+/* Disarms linked timeout, removes from list, sets prev pointer,
+ * schedules task work for completion. */
 static enum hrtimer_restart io_link_timeout_fn(struct hrtimer *timer)
 {
 	struct io_timeout_data *data = container_of(timer,
@@ -369,6 +390,7 @@ static enum hrtimer_restart io_link_timeout_fn(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
+/* Get the clockid for the timeout. */
 static clockid_t io_timeout_get_clock(struct io_timeout_data *data)
 {
 	switch (data->flags & IORING_TIMEOUT_CLOCK_MASK) {
@@ -385,6 +407,7 @@ static clockid_t io_timeout_get_clock(struct io_timeout_data *data)
 	}
 }
 
+/* Update linked timeout timer. */
 static int io_linked_timeout_update(struct io_ring_ctx *ctx, __u64 user_data,
 				    struct timespec64 *ts, enum hrtimer_mode mode)
 	__must_hold(&ctx->timeout_lock)
@@ -412,6 +435,7 @@ static int io_linked_timeout_update(struct io_ring_ctx *ctx, __u64 user_data,
 	return 0;
 }
 
+/* Update a timeout timer. */
 static int io_timeout_update(struct io_ring_ctx *ctx, __u64 user_data,
 			     struct timespec64 *ts, enum hrtimer_mode mode)
 	__must_hold(&ctx->timeout_lock)
@@ -434,6 +458,7 @@ static int io_timeout_update(struct io_ring_ctx *ctx, __u64 user_data,
 	return 0;
 }
 
+/* Validates flags and reads removal parameters */
 int io_timeout_remove_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_timeout_rem *tr = io_kiocb_to_cmd(req, struct io_timeout_rem);
@@ -465,6 +490,7 @@ int io_timeout_remove_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/* Translate io_uring timeout flags to hrtimer mode. */
 static inline enum hrtimer_mode io_translate_timeout_mode(unsigned int flags)
 {
 	return (flags & IORING_TIMEOUT_ABS) ? HRTIMER_MODE_ABS
@@ -503,6 +529,8 @@ int io_timeout_remove(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/* Validates SQE fields and flags, initializes timeout command and async data,
+ * sets up hrtimer with appropriate callback and clock. */
 static int __io_timeout_prep(struct io_kiocb *req,
 			     const struct io_uring_sqe *sqe,
 			     bool is_timeout_link)
@@ -573,16 +601,20 @@ static int __io_timeout_prep(struct io_kiocb *req,
 	return 0;
 }
 
+/* Wrapper around __io_timeout_prep for normal timeouts. */
 int io_timeout_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return __io_timeout_prep(req, sqe, false);
 }
 
+/* Wrapper around __io_timeout_prep for linked timeouts. */
 int io_link_timeout_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return __io_timeout_prep(req, sqe, true);
 }
 
+/* Inserts the timeout into the timeout list in order, sets target sequence,
+ * and starts the hrtimer. */
 int io_timeout(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_timeout *timeout = io_kiocb_to_cmd(req, struct io_timeout);
@@ -633,6 +665,8 @@ add:
 	return IOU_ISSUE_SKIP_COMPLETE;
 }
 
+/* Starts the timer and adds the timeout to the linked timeout list.
+ * Drops the submission reference. */
 void io_queue_linked_timeout(struct io_kiocb *req)
 {
 	struct io_timeout *timeout = io_kiocb_to_cmd(req, struct io_timeout);
@@ -655,6 +689,7 @@ void io_queue_linked_timeout(struct io_kiocb *req)
 	io_put_req(req);
 }
 
+/* Check if a timeout request matches a task context. */
 static bool io_match_task(struct io_kiocb *head, struct io_uring_task *tctx,
 			  bool cancel_all)
 	__must_hold(&head->ctx->timeout_lock)

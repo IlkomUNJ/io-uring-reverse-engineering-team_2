@@ -20,6 +20,8 @@ struct io_ftrunc {
 	loff_t				len;
 };
 
+/* Validates that unsupported fields are zero and reads the length (new file size)
+ * from the SQE offset field. Marks the request as forced asynchronous. */
 int io_ftruncate_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_ftrunc *ft = io_kiocb_to_cmd(req, struct io_ftrunc);
@@ -34,6 +36,9 @@ int io_ftruncate_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/* Calls do_ftruncate on the file with the requested length.
+ * Warns if called with non-blocking flag (not supported).
+ * Sets the result in the request and returns IOU_OK. */
 int io_ftruncate(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_ftrunc *ft = io_kiocb_to_cmd(req, struct io_ftrunc);

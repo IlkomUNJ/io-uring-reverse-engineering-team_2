@@ -32,6 +32,7 @@ struct io_waitid {
 	struct waitid_info info;
 };
 
+/* Releases the pid reference and frees async data, clearing flags. */
 static void io_waitid_free(struct io_kiocb *req)
 {
 	struct io_waitid_async *iwa = req->async_data;
@@ -42,6 +43,8 @@ static void io_waitid_free(struct io_kiocb *req)
 	req->flags &= ~REQ_F_ASYNC_DATA;
 }
 
+/* Copies waitid signal info into a compat_siginfo structure in user space.
+ * Returns true on success, false on fault. */
 static bool io_waitid_compat_copy_si(struct io_waitid *iw, int signo)
 {
 	struct compat_siginfo __user *infop;
@@ -67,6 +70,7 @@ Efault:
 	goto done;
 }
 
+/* Copies waitid signal info into user space, handling compat mode. */
 static bool io_waitid_copy_si(struct io_kiocb *req, int signo)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -96,6 +100,8 @@ Efault:
 	goto done;
 }
 
+/* Converts positive return to zero and sets SIGCHLD signal if applicable.
+ * Copies siginfo to user space and frees resources. */
 static int io_waitid_finish(struct io_kiocb *req, int ret)
 {
 	int signo = 0;
@@ -111,6 +117,7 @@ static int io_waitid_finish(struct io_kiocb *req, int ret)
 	return ret;
 }
 
+/* Removes request from hash list, finalizes waitid, and sets request result. */
 static void io_waitid_complete(struct io_kiocb *req, int ret)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -128,6 +135,8 @@ static void io_waitid_complete(struct io_kiocb *req, int ret)
 	io_req_set_res(req, ret, 0);
 }
 
+/* Marks request as canceled, claims ownership, removes from wait queue,
+ * completes request with -ECANCELED, and queues task work completion. */
 static bool __io_waitid_cancel(struct io_kiocb *req)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -151,18 +160,22 @@ static bool __io_waitid_cancel(struct io_kiocb *req)
 	return true;
 }
 
+/* Wrapper to cancel request using __io_waitid_cancel. */
 int io_waitid_cancel(struct io_ring_ctx *ctx, struct io_cancel_data *cd,
 		     unsigned int issue_flags)
 {
 	return io_cancel_remove(ctx, cd, issue_flags, &ctx->waitid_list, __io_waitid_cancel);
 }
 
+/* Wrapper to remove all waitid requests using __io_waitid_cancel. */
 bool io_waitid_remove_all(struct io_ring_ctx *ctx, struct io_uring_task *tctx,
 			  bool cancel_all)
 {
 	return io_cancel_remove_all(ctx, tctx, &ctx->waitid_list, cancel_all, __io_waitid_cancel);
 }
 
+/* Decrements reference count and if non-zero, queues task work callback
+ * and removes from wait queue. */
 static inline bool io_waitid_drop_issue_ref(struct io_kiocb *req)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -181,6 +194,8 @@ static inline bool io_waitid_drop_issue_ref(struct io_kiocb *req)
 	return true;
 }
 
+/* Performs wait operation, handles restart signals, re-arms wait queue,
+ * completes request, and finalizes task work. */
 static void io_waitid_cb(struct io_kiocb *req, io_tw_token_t tw)
 {
 	struct io_waitid_async *iwa = req->async_data;
@@ -220,6 +235,8 @@ static void io_waitid_cb(struct io_kiocb *req, io_tw_token_t tw)
 	io_req_task_complete(req, tw);
 }
 
+/* Checks if child should wake, claims ownership, queues task work callback,
+ * removes wait queue entry, and returns 1 to wake. */
 static int io_waitid_wait(struct wait_queue_entry *wait, unsigned mode,
 			  int sync, void *key)
 {
@@ -242,6 +259,8 @@ static int io_waitid_wait(struct wait_queue_entry *wait, unsigned mode,
 	return 1;
 }
 
+/* Validates that unsupported fields are zero, allocates async data,
+ * and initializes the io_waitid command structure with parameters from the SQE. */
 int io_waitid_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);
@@ -262,6 +281,9 @@ int io_waitid_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/* Prepares kernel waitid, adds request to waitid list, sets up wait queue,
+ * and performs the wait. Handles restartable syscalls and cancellation races.
+ * Finalizes the request with the wait result. */
 int io_waitid(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_waitid *iw = io_kiocb_to_cmd(req, struct io_waitid);

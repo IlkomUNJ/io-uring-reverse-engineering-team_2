@@ -16,6 +16,7 @@
 #include "rsrc.h"
 #include "uring_cmd.h"
 
+/* Frees the iovec vector and then frees the async command structure. */
 void io_cmd_cache_free(const void *entry)
 {
 	struct io_async_cmd *ac = (struct io_async_cmd *)entry;
@@ -24,6 +25,8 @@ void io_cmd_cache_free(const void *entry)
 	kfree(ac);
 }
 
+/* Frees any operation-specific data, manages iovec cache, and returns
+ * the async command data to the command cache if possible. */
 static void io_req_uring_cleanup(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -49,11 +52,14 @@ static void io_req_uring_cleanup(struct io_kiocb *req, unsigned int issue_flags)
 	}
 }
 
+/* Public wrapper to cleanup io_uring command resources. */
 void io_uring_cmd_cleanup(struct io_kiocb *req)
 {
 	io_req_uring_cleanup(req, 0);
 }
 
+/* Iterates over cancelable commands and calls the driver's uring_cmd cancel handler.
+ * Flushes completions after cancellation attempts. */
 bool io_uring_try_cancel_uring_cmd(struct io_ring_ctx *ctx,
 				   struct io_uring_task *tctx, bool cancel_all)
 {
@@ -82,6 +88,7 @@ bool io_uring_try_cancel_uring_cmd(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/* Removes the cancelable flag and deletes the command from the cancelable list. */
 static void io_uring_cmd_del_cancelable(struct io_uring_cmd *cmd,
 		unsigned int issue_flags)
 {
@@ -121,6 +128,7 @@ void io_uring_cmd_mark_cancelable(struct io_uring_cmd *cmd,
 }
 EXPORT_SYMBOL_GPL(io_uring_cmd_mark_cancelable);
 
+/* Calls the command's task work callback with appropriate flags. */
 static void io_uring_cmd_work(struct io_kiocb *req, io_tw_token_t tw)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -133,6 +141,7 @@ static void io_uring_cmd_work(struct io_kiocb *req, io_tw_token_t tw)
 	ioucmd->task_work_cb(ioucmd, flags);
 }
 
+/* Sets the task work callback and schedules the task work. */
 void __io_uring_cmd_do_in_task(struct io_uring_cmd *ioucmd,
 			void (*task_work_cb)(struct io_uring_cmd *, unsigned),
 			unsigned flags)
@@ -145,6 +154,7 @@ void __io_uring_cmd_do_in_task(struct io_uring_cmd *ioucmd,
 }
 EXPORT_SYMBOL_GPL(__io_uring_cmd_do_in_task);
 
+/* Set extra fields in 32-byte CQE. */
 static inline void io_req_set_cqe32_extra(struct io_kiocb *req,
 					  u64 extra1, u64 extra2)
 {
@@ -152,10 +162,8 @@ static inline void io_req_set_cqe32_extra(struct io_kiocb *req,
 	req->big_cqe.extra2 = extra2;
 }
 
-/*
- * Called by consumers of io_uring_cmd, if they originally returned
- * -EIOCBQUEUED upon receiving the command.
- */
+/* Removes cancelable flag, sets completion result, cleans up resources,
+ * and schedules completion callbacks or deferred completions. */
 void io_uring_cmd_done(struct io_uring_cmd *ioucmd, ssize_t ret, u64 res2,
 		       unsigned issue_flags)
 {
@@ -184,6 +192,7 @@ void io_uring_cmd_done(struct io_uring_cmd *ioucmd, ssize_t ret, u64 res2,
 }
 EXPORT_SYMBOL_GPL(io_uring_cmd_done);
 
+/* Allocates async data and caches the SQE for stability beyond prep. */
 static int io_uring_cmd_prep_setup(struct io_kiocb *req,
 				   const struct io_uring_sqe *sqe)
 {
@@ -210,6 +219,8 @@ static int io_uring_cmd_prep_setup(struct io_kiocb *req,
 	return 0;
 }
 
+/* Validates flags and fixed buffer usage, stores command operation,
+ * and calls setup helper. */
 int io_uring_cmd_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -229,6 +240,10 @@ int io_uring_cmd_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return io_uring_cmd_prep_setup(req, sqe);
 }
 
+/* Checks for file operation support, performs security checks,
+ * sets issue flags based on context, and calls the file's uring_cmd.
+ * Handles special return codes, sets failure on error, cleans up,
+ * and sets the request result */
 int io_uring_cmd(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_uring_cmd *ioucmd = io_kiocb_to_cmd(req, struct io_uring_cmd);
@@ -266,6 +281,7 @@ int io_uring_cmd(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/* Import a fixed buffer for io_uring command. */
 int io_uring_cmd_import_fixed(u64 ubuf, unsigned long len, int rw,
 			      struct iov_iter *iter,
 			      struct io_uring_cmd *ioucmd,
@@ -277,6 +293,7 @@ int io_uring_cmd_import_fixed(u64 ubuf, unsigned long len, int rw,
 }
 EXPORT_SYMBOL_GPL(io_uring_cmd_import_fixed);
 
+/* Import a fixed iovec for io_uring command. */
 int io_uring_cmd_import_fixed_vec(struct io_uring_cmd *ioucmd,
 				  const struct iovec __user *uvec,
 				  size_t uvec_segs,
@@ -296,6 +313,7 @@ int io_uring_cmd_import_fixed_vec(struct io_uring_cmd *ioucmd,
 }
 EXPORT_SYMBOL_GPL(io_uring_cmd_import_fixed_vec);
 
+/* Queues the request to the io-wq for blocking execution. */
 void io_uring_cmd_issue_blocking(struct io_uring_cmd *ioucmd)
 {
 	struct io_kiocb *req = cmd_to_io_kiocb(ioucmd);
@@ -303,6 +321,7 @@ void io_uring_cmd_issue_blocking(struct io_uring_cmd *ioucmd)
 	io_req_queue_iowq(req);
 }
 
+/* Handle getsockopt command. Supports only SOL_SOCKET level options. */
 static inline int io_uring_cmd_getsockopt(struct socket *sock,
 					  struct io_uring_cmd *cmd,
 					  unsigned int issue_flags)
@@ -330,6 +349,7 @@ static inline int io_uring_cmd_getsockopt(struct socket *sock,
 	return optlen;
 }
 
+/* Handle setsockopt command. */
 static inline int io_uring_cmd_setsockopt(struct socket *sock,
 					  struct io_uring_cmd *cmd,
 					  unsigned int issue_flags)
@@ -351,6 +371,7 @@ static inline int io_uring_cmd_setsockopt(struct socket *sock,
 }
 
 #if defined(CONFIG_NET)
+/* Handle socket-related io_uring commands. Supports SIOCINQ, SIOCOUTQ, getsockopt, and setsockopt operations. */
 int io_uring_cmd_sock(struct io_uring_cmd *cmd, unsigned int issue_flags)
 {
 	struct socket *sock = cmd->file->private_data;

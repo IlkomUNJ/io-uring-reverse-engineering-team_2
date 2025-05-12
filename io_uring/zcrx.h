@@ -40,14 +40,27 @@ struct io_zcrx_ifq {
 };
 
 #if defined(CONFIG_IO_URING_ZCRX)
+
+/* Register a zero-copy RX interface queue with io_uring. */
 int io_register_zcrx_ifq(struct io_ring_ctx *ctx,
 			 struct io_uring_zcrx_ifq_reg __user *arg);
+			
+/* Unregister all zero-copy RX interface queues. */
 void io_unregister_zcrx_ifqs(struct io_ring_ctx *ctx);
+
+/* Shutdown zero-copy RX interface queues. */
 void io_shutdown_zcrx_ifqs(struct io_ring_ctx *ctx);
+
+/* Receive data via zero-copy RX. */
 int io_zcrx_recv(struct io_kiocb *req, struct io_zcrx_ifq *ifq,
 		 struct socket *sock, unsigned int flags,
 		 unsigned issue_flags, unsigned int *len);
 #else
+
+/* implementations for zero-copy receive (zcrx) io_uring functions
+ * when CONFIG_IO_URING_ZCRX is not enabled.
+ * These functions return -EOPNOTSUPP or do nothing, indicating the feature
+ * is not supported. */
 static inline int io_register_zcrx_ifq(struct io_ring_ctx *ctx,
 					struct io_uring_zcrx_ifq_reg __user *arg)
 {
@@ -67,7 +80,10 @@ static inline int io_zcrx_recv(struct io_kiocb *req, struct io_zcrx_ifq *ifq,
 }
 #endif
 
+/* Perform zero-copy receive operation. */
 int io_recvzc(struct io_kiocb *req, unsigned int issue_flags);
+
+/* Prepare a zero-copy receive io_uring submission queue entry. */
 int io_recvzc_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe);
 
 #endif
