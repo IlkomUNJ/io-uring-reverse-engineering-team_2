@@ -20,6 +20,9 @@ struct io_statx {
 	struct statx __user		*buffer;
 };
 
+/* Validates unsupported fields, checks for fixed file flag,
+ * reads parameters from SQE, and obtains filename reference.
+ * Marks request for cleanup and forced async execution. */
 int io_statx_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	struct io_statx *sx = io_kiocb_to_cmd(req, struct io_statx);
@@ -50,6 +53,8 @@ int io_statx_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/* Calls do_statx syscall, warns if non-blocking flag is set,
+ * and sets the request result. */
 int io_statx(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_statx *sx = io_kiocb_to_cmd(req, struct io_statx);
@@ -62,6 +67,7 @@ int io_statx(struct io_kiocb *req, unsigned int issue_flags)
 	return IOU_OK;
 }
 
+/* Releases filename reference if allocated. */
 void io_statx_cleanup(struct io_kiocb *req)
 {
 	struct io_statx *sx = io_kiocb_to_cmd(req, struct io_statx);

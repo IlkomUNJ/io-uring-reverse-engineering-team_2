@@ -23,17 +23,22 @@
 #include "poll.h"
 #include "rw.h"
 
+/* Completion handler for normal (non-iopoll) read/write operations */
 static void io_complete_rw(struct kiocb *kiocb, long res);
+
+/* Completion handler for iopoll read/write operations */
 static void io_complete_rw_iopoll(struct kiocb *kiocb, long res);
 
+/* Structure holding read/write operation data */
 struct io_rw {
 	/* NOTE: kiocb has the file as the first member, so don't do it here */
-	struct kiocb			kiocb;
-	u64				addr;
-	u32				len;
-	rwf_t				flags;
+	struct kiocb			kiocb;  /* Kernel I/O control block */
+	u64				addr;   /* User buffer address */
+	u32				len;    /* Length of data to transfer */
+	rwf_t				flags;  /* Read/write flags */
 };
 
+/* Check if file supports non-blocking operations */
 static bool io_file_supports_nowait(struct io_kiocb *req, __poll_t mask)
 {
 	/* If FMODE_NOWAIT is set for a file, we're golden */
@@ -49,6 +54,7 @@ static bool io_file_supports_nowait(struct io_kiocb *req, __poll_t mask)
 	return false;
 }
 
+/* Handle compat iovec buffer selection for 32-bit userspace */
 static int io_iov_compat_buffer_select_prep(struct io_rw *rw)
 {
 	struct compat_iovec __user *uiov = u64_to_user_ptr(rw->addr);
@@ -60,6 +66,7 @@ static int io_iov_compat_buffer_select_prep(struct io_rw *rw)
 	return 0;
 }
 
+/* Prepare buffer selection for readv/writev operations */
 static int io_iov_buffer_select_prep(struct io_kiocb *req)
 {
 	struct iovec __user *uiov;
@@ -79,6 +86,7 @@ static int io_iov_buffer_select_prep(struct io_kiocb *req)
 	return 0;
 }
 
+/* Import iovec from userspace for vectored I/O */
 static int io_import_vec(int ddir, struct io_kiocb *req,
 			 struct io_async_rw *io,
 			 const struct iovec __user *uvec,
@@ -106,6 +114,7 @@ static int io_import_vec(int ddir, struct io_kiocb *req,
 	return 0;
 }
 
+/* Import read/write buffer from userspace */
 static int __io_import_rw_buffer(int ddir, struct io_kiocb *req,
 			     struct io_async_rw *io,
 			     unsigned int issue_flags)
@@ -128,6 +137,7 @@ static int __io_import_rw_buffer(int ddir, struct io_kiocb *req,
 	return import_ubuf(ddir, buf, sqe_len, &io->iter);
 }
 
+/* Wrapper for buffer import with state saving */
 static inline int io_import_rw_buffer(int rw, struct io_kiocb *req,
 				      struct io_async_rw *io,
 				      unsigned int issue_flags)
@@ -142,6 +152,7 @@ static inline int io_import_rw_buffer(int rw, struct io_kiocb *req,
 	return 0;
 }
 
+/* Recycle async read/write resources */
 static void io_rw_recycle(struct io_kiocb *req, unsigned int issue_flags)
 {
 	struct io_async_rw *rw = req->async_data;
@@ -159,34 +170,12 @@ static void io_rw_recycle(struct io_kiocb *req, unsigned int issue_flags)
 	}
 }
 
+/* Cleanup read/write request resources */
 static void io_req_rw_cleanup(struct io_kiocb *req, unsigned int issue_flags)
 {
 	/*
 	 * Disable quick recycling for anything that's gone through io-wq.
-	 * In theory, this should be fine to cleanup. However, some read or
-	 * write iter handling touches the iovec AFTER having called into the
-	 * handler, eg to reexpand or revert. This means we can have:
-	 *
-	 * task			io-wq
-	 *   issue
-	 *     punt to io-wq
-	 *			issue
-	 *			  blkdev_write_iter()
-	 *			    ->ki_complete()
-	 *			      io_complete_rw()
-	 *			        queue tw complete
-	 *  run tw
-	 *    req_rw_cleanup
-	 *			iov_iter_count() <- look at iov_iter again
-	 *
-	 * which can lead to a UAF. This is only possible for io-wq offload
-	 * as the cleanup can run in parallel. As io-wq is not the fast path,
-	 * just leave cleanup to the end.
-	 *
-	 * This is really a bug in the core code that does this, any issue
-	 * path should assume that a successful (or -EIOCBQUEUED) return can
-	 * mean that the underlying data can be gone at any time. But that
-	 * should be fixed seperately, and then this check could be killed.
+	 * See detailed comment in code about potential UAF issues.
 	 */
 	if (!(req->flags & (REQ_F_REISSUE | REQ_F_REFCOUNT))) {
 		req->flags &= ~REQ_F_NEED_CLEANUP;
@@ -194,6 +183,7 @@ static void io_req_rw_cleanup(struct io_kiocb *req, unsigned int issue_flags)
 	}
 }
 
+/* Allocate async read/write data structure */
 static int io_rw_alloc_async(struct io_kiocb *req)
 {
 	struct io_ring_ctx *ctx = req->ctx;
@@ -208,12 +198,14 @@ static int io_rw_alloc_async(struct io_kiocb *req)
 	return 0;
 }
 
+/* Save metadata state for restoration */
 static inline void io_meta_save_state(struct io_async_rw *io)
 {
 	io->meta_state.seed = io->meta.seed;
 	iov_iter_save_state(&io->meta.iter, &io->meta_state.iter_meta);
 }
 
+/* Restore metadata state */
 static inline void io_meta_restore(struct io_async_rw *io, struct kiocb *kiocb)
 {
 	if (kiocb->ki_flags & IOCB_HAS_METADATA) {
@@ -222,6 +214,7 @@ static inline void io_meta_restore(struct io_async_rw *io, struct kiocb *kiocb)
 	}
 }
 
+/* Prepare request with protection information (PI) */
 static int io_prep_rw_pi(struct io_kiocb *req, struct io_rw *rw, int ddir,
 			 u64 attr_ptr, u64 attr_type_mask)
 {
@@ -249,6 +242,7 @@ static int io_prep_rw_pi(struct io_kiocb *req, struct io_rw *rw, int ddir,
 	return ret;
 }
 
+/* Common preparation for read/write operations */
 static int __io_prep_rw(struct io_kiocb *req, const struct io_uring_sqe *sqe,
 			int ddir)
 {
@@ -261,7 +255,6 @@ static int __io_prep_rw(struct io_kiocb *req, const struct io_uring_sqe *sqe,
 		return -ENOMEM;
 
 	rw->kiocb.ki_pos = READ_ONCE(sqe->off);
-	/* used for fixed read/write too - just read unconditionally */
 	req->buf_index = READ_ONCE(sqe->buf_index);
 
 	ioprio = READ_ONCE(sqe->ioprio);
@@ -300,6 +293,7 @@ static int __io_prep_rw(struct io_kiocb *req, const struct io_uring_sqe *sqe,
 	return 0;
 }
 
+/* Import buffers for read/write operations */
 static int io_rw_do_import(struct io_kiocb *req, int ddir)
 {
 	if (io_do_buffer_select(req))
@@ -308,6 +302,7 @@ static int io_rw_do_import(struct io_kiocb *req, int ddir)
 	return io_import_rw_buffer(ddir, req, req->async_data, 0);
 }
 
+/* Prepare read/write operation */
 static int io_prep_rw(struct io_kiocb *req, const struct io_uring_sqe *sqe,
 		      int ddir)
 {
@@ -320,16 +315,19 @@ static int io_prep_rw(struct io_kiocb *req, const struct io_uring_sqe *sqe,
 	return io_rw_do_import(req, ddir);
 }
 
+/* Prepare read operation */
 int io_prep_read(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return io_prep_rw(req, sqe, ITER_DEST);
 }
 
+/* Prepare write operation */
 int io_prep_write(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return io_prep_rw(req, sqe, ITER_SOURCE);
 }
 
+/* Prepare vectored read/write operation */
 static int io_prep_rwv(struct io_kiocb *req, const struct io_uring_sqe *sqe,
 		       int ddir)
 {
@@ -342,22 +340,25 @@ static int io_prep_rwv(struct io_kiocb *req, const struct io_uring_sqe *sqe,
 		return 0;
 
 	/*
-	 * Have to do this validation here, as this is in io_read() rw->len
-	 * might have chanaged due to buffer selection
+	 * Additional validation for buffer selection case since rw->len
+	 * might have changed due to buffer selection
 	 */
 	return io_iov_buffer_select_prep(req);
 }
 
+/* Prepare vectored read operation */
 int io_prep_readv(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return io_prep_rwv(req, sqe, ITER_DEST);
 }
 
+/* Prepare vectored write operation */
 int io_prep_writev(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return io_prep_rwv(req, sqe, ITER_SOURCE);
 }
 
+/* Initialize fixed read/write operation */
 static int io_init_rw_fixed(struct io_kiocb *req, unsigned int issue_flags,
 			    int ddir)
 {
@@ -374,16 +375,19 @@ static int io_init_rw_fixed(struct io_kiocb *req, unsigned int issue_flags,
 	return ret;
 }
 
+/* Prepare fixed read operation */
 int io_prep_read_fixed(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return __io_prep_rw(req, sqe, ITER_DEST);
 }
 
+/* Prepare fixed write operation */
 int io_prep_write_fixed(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	return __io_prep_rw(req, sqe, ITER_SOURCE);
 }
 
+/* Import registered buffer vector for read/write */
 static int io_rw_import_reg_vec(struct io_kiocb *req,
 				struct io_async_rw *io,
 				int ddir, unsigned int issue_flags)
@@ -401,6 +405,7 @@ static int io_rw_import_reg_vec(struct io_kiocb *req,
 	return 0;
 }
 
+/* Prepare registered vector for read/write */
 static int io_rw_prep_reg_vec(struct io_kiocb *req)
 {
 	struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
@@ -411,6 +416,7 @@ static int io_rw_prep_reg_vec(struct io_kiocb *req)
 	return io_prep_reg_iovec(req, &io->vec, uvec, rw->len);
 }
 
+/* Prepare fixed vectored read operation */
 int io_prep_readv_fixed(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	int ret;
@@ -421,6 +427,7 @@ int io_prep_readv_fixed(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return io_rw_prep_reg_vec(req);
 }
 
+/* Prepare fixed vectored write operation */
 int io_prep_writev_fixed(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
 	int ret;
@@ -432,8 +439,8 @@ int io_prep_writev_fixed(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 }
 
 /*
- * Multishot read is prepared just like a normal read/write request, only
- * difference is that we set the MULTISHOT flag.
+ * Prepare multishot read operation
+ * Must be used with provided buffers and has special requirements
  */
 int io_read_mshot_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 {
@@ -455,12 +462,14 @@ int io_read_mshot_prep(struct io_kiocb *req, const struct io_uring_sqe *sqe)
 	return 0;
 }
 
+/* Cleanup function for readv/writev operations */
 void io_readv_writev_cleanup(struct io_kiocb *req)
 {
 	lockdep_assert_held(&req->ctx->uring_lock);
 	io_rw_recycle(req, 0);
 }
 
+/* Update position for read/write operations */
 static inline loff_t *io_kiocb_update_pos(struct io_kiocb *req)
 {
 	struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
@@ -477,7 +486,10 @@ static inline loff_t *io_kiocb_update_pos(struct io_kiocb *req)
 	rw->kiocb.ki_pos = 0;
 	return NULL;
 }
-
+/* 
+ * Determine if a read/write operation should be reissued after getting -EAGAIN.
+ * Only applicable for block devices and regular files.
+ */
 static bool io_rw_should_reissue(struct io_kiocb *req)
 {
 #ifdef CONFIG_BLOCK
@@ -486,19 +498,21 @@ static bool io_rw_should_reissue(struct io_kiocb *req)
 	struct io_async_rw *io = req->async_data;
 	struct io_ring_ctx *ctx = req->ctx;
 
+	/* Only for block devices and regular files */
 	if (!S_ISBLK(mode) && !S_ISREG(mode))
 		return false;
+	/* Don't reissue if this is NOWAIT or from io-wq without IOPOLL */
 	if ((req->flags & REQ_F_NOWAIT) || (io_wq_current_is_worker() &&
 	    !(ctx->flags & IORING_SETUP_IOPOLL)))
 		return false;
 	/*
 	 * If ref is dying, we might be running poll reap from the exit work.
-	 * Don't attempt to reissue from that path, just let it fail with
-	 * -EAGAIN.
+	 * Don't attempt to reissue from that path.
 	 */
 	if (percpu_ref_is_dying(&ctx->refs))
 		return false;
 
+	/* Restore metadata and iterator state before retry */
 	io_meta_restore(io, &rw->kiocb);
 	iov_iter_restore(&io->iter, &io->iter_state);
 	return true;
@@ -507,18 +521,17 @@ static bool io_rw_should_reissue(struct io_kiocb *req)
 #endif
 }
 
+/* Complete write accounting for regular files */
 static void io_req_end_write(struct io_kiocb *req)
 {
 	if (req->flags & REQ_F_ISREG) {
 		struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
-
 		kiocb_end_write(&rw->kiocb);
 	}
 }
 
 /*
- * Trigger the notifications after having done some IO, and finish the write
- * accounting, if any.
+ * Trigger notifications after IO completion and finish write accounting
  */
 static void io_req_io_end(struct io_kiocb *req)
 {
@@ -526,17 +539,19 @@ static void io_req_io_end(struct io_kiocb *req)
 
 	if (rw->kiocb.ki_flags & IOCB_WRITE) {
 		io_req_end_write(req);
-		fsnotify_modify(req->file);
+		fsnotify_modify(req->file);  // File modification notification
 	} else {
-		fsnotify_access(req->file);
+		fsnotify_access(req->file);  // File access notification
 	}
 }
 
+/* Common completion handling for read/write operations */
 static void __io_complete_rw_common(struct io_kiocb *req, long res)
 {
 	if (res == req->cqe.res)
 		return;
 	if (res == -EAGAIN && io_rw_should_reissue(req)) {
+		/* Mark for reissue and prevent buffer recycling */
 		req->flags |= REQ_F_REISSUE | REQ_F_BL_NO_RECYCLE;
 	} else {
 		req_set_fail(req);
@@ -544,11 +559,12 @@ static void __io_complete_rw_common(struct io_kiocb *req, long res)
 	}
 }
 
+/* Fix up the result by adding previously done IO for partial operations */
 static inline int io_fixup_rw_res(struct io_kiocb *req, long res)
 {
 	struct io_async_rw *io = req->async_data;
 
-	/* add previously done IO, if any */
+	/* Add previously done IO, if any */
 	if (req_has_async_data(req) && io->bytes_done > 0) {
 		if (res < 0)
 			res = io->bytes_done;
@@ -558,19 +574,21 @@ static inline int io_fixup_rw_res(struct io_kiocb *req, long res)
 	return res;
 }
 
+/* Complete read/write request */
 void io_req_rw_complete(struct io_kiocb *req, io_tw_token_t tw)
 {
 	struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
 	struct kiocb *kiocb = &rw->kiocb;
 
+	/* Handle DIO caller completion if needed */
 	if ((kiocb->ki_flags & IOCB_DIO_CALLER_COMP) && kiocb->dio_complete) {
 		long res = kiocb->dio_complete(rw->kiocb.private);
-
 		io_req_set_res(req, io_fixup_rw_res(req, res), 0);
 	}
 
 	io_req_io_end(req);
 
+	/* Return buffer if one was selected */
 	if (req->flags & (REQ_F_BUFFER_SELECTED|REQ_F_BUFFER_RING))
 		req->cqe.flags |= io_put_kbuf(req, req->cqe.res, 0);
 
@@ -578,6 +596,7 @@ void io_req_rw_complete(struct io_kiocb *req, io_tw_token_t tw)
 	io_req_task_complete(req, tw);
 }
 
+/* Normal (non-iopoll) completion handler */
 static void io_complete_rw(struct kiocb *kiocb, long res)
 {
 	struct io_rw *rw = container_of(kiocb, struct io_rw, kiocb);
@@ -587,10 +606,12 @@ static void io_complete_rw(struct kiocb *kiocb, long res)
 		__io_complete_rw_common(req, res);
 		io_req_set_res(req, io_fixup_rw_res(req, res), 0);
 	}
+	/* Schedule completion via task work */
 	req->io_task_work.func = io_req_rw_complete;
 	__io_req_task_work_add(req, IOU_F_TWQ_LAZY_WAKE);
 }
 
+/* IOPOLL completion handler */
 static void io_complete_rw_iopoll(struct kiocb *kiocb, long res)
 {
 	struct io_rw *rw = container_of(kiocb, struct io_rw, kiocb);
@@ -605,10 +626,11 @@ static void io_complete_rw_iopoll(struct kiocb *kiocb, long res)
 			req->cqe.res = res;
 	}
 
-	/* order with io_iopoll_complete() checking ->iopoll_completed */
+	/* Mark completion for iopoll */
 	smp_store_release(&req->iopoll_completed, 1);
 }
 
+/* Finalize read/write operation result */
 static inline void io_rw_done(struct io_kiocb *req, ssize_t ret)
 {
 	struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
@@ -617,43 +639,39 @@ static inline void io_rw_done(struct io_kiocb *req, ssize_t ret)
 	if (ret == -EIOCBQUEUED)
 		return;
 
-	/* transform internal restart error codes */
+	/* Transform internal restart error codes to EINTR */
 	if (unlikely(ret < 0)) {
 		switch (ret) {
 		case -ERESTARTSYS:
 		case -ERESTARTNOINTR:
 		case -ERESTARTNOHAND:
 		case -ERESTART_RESTARTBLOCK:
-			/*
-			 * We can't just restart the syscall, since previously
-			 * submitted sqes may already be in progress. Just fail
-			 * this IO with EINTR.
-			 */
 			ret = -EINTR;
 			break;
 		}
 	}
 
+	/* Call appropriate completion handler */
 	if (req->ctx->flags & IORING_SETUP_IOPOLL)
 		io_complete_rw_iopoll(&rw->kiocb, ret);
 	else
 		io_complete_rw(&rw->kiocb, ret);
 }
 
+/* Handle completion of kiocb operation */
 static int kiocb_done(struct io_kiocb *req, ssize_t ret,
 		       unsigned int issue_flags)
 {
 	struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
 	unsigned final_ret = io_fixup_rw_res(req, ret);
 
+	/* Update file position if needed */
 	if (ret >= 0 && req->flags & REQ_F_CUR_POS)
 		req->file->f_pos = rw->kiocb.ki_pos;
+	
+	/* Handle non-iopoll case inline */
 	if (ret >= 0 && !(req->ctx->flags & IORING_SETUP_IOPOLL)) {
 		__io_complete_rw_common(req, ret);
-		/*
-		 * Safe to call io_end from here as we're inline
-		 * from the submission path.
-		 */
 		io_req_io_end(req);
 		io_req_set_res(req, final_ret, io_put_kbuf(req, ret, issue_flags));
 		io_req_rw_cleanup(req, issue_flags);
@@ -665,14 +683,15 @@ static int kiocb_done(struct io_kiocb *req, ssize_t ret,
 	return IOU_ISSUE_SKIP_COMPLETE;
 }
 
+/* Get position pointer for kiocb, handling stream files */
 static inline loff_t *io_kiocb_ppos(struct kiocb *kiocb)
 {
 	return (kiocb->ki_filp->f_mode & FMODE_STREAM) ? NULL : &kiocb->ki_pos;
 }
 
 /*
- * For files that don't have ->read_iter() and ->write_iter(), handle them
- * by looping over ->read() or ->write() manually.
+ * Fallback for files without ->read_iter()/->write_iter() by looping over
+ * ->read()/->write() manually.
  */
 static ssize_t loop_rw_iter(int ddir, struct io_rw *rw, struct iov_iter *iter)
 {
@@ -682,11 +701,7 @@ static ssize_t loop_rw_iter(int ddir, struct io_rw *rw, struct iov_iter *iter)
 	ssize_t ret = 0;
 	loff_t *ppos;
 
-	/*
-	 * Don't support polled IO through this interface, and we can't
-	 * support non-blocking either. For the latter, this just causes
-	 * the kiocb to be handled from an async context.
-	 */
+	/* Don't support polled or non-blocking IO through this path */
 	if (kiocb->ki_flags & IOCB_HIPRI)
 		return -EOPNOTSUPP;
 	if ((kiocb->ki_flags & IOCB_NOWAIT) &&
@@ -697,11 +712,13 @@ static ssize_t loop_rw_iter(int ddir, struct io_rw *rw, struct iov_iter *iter)
 
 	ppos = io_kiocb_ppos(kiocb);
 
+	/* Manual loop for each segment */
 	while (iov_iter_count(iter)) {
 		void __user *addr;
 		size_t len;
 		ssize_t nr;
 
+		/* Get address and length for current segment */
 		if (iter_is_ubuf(iter)) {
 			addr = iter->ubuf + iter->iov_offset;
 			len = iov_iter_count(iter);
@@ -713,6 +730,7 @@ static ssize_t loop_rw_iter(int ddir, struct io_rw *rw, struct iov_iter *iter)
 			len = rw->len;
 		}
 
+		/* Perform the actual read/write */
 		if (ddir == READ)
 			nr = file->f_op->read(file, addr, len, ppos);
 		else
@@ -724,6 +742,8 @@ static ssize_t loop_rw_iter(int ddir, struct io_rw *rw, struct iov_iter *iter)
 			break;
 		}
 		ret += nr;
+		
+		/* Advance the iterator */
 		if (!iov_iter_is_bvec(iter)) {
 			iov_iter_advance(iter, nr);
 		} else {
@@ -740,14 +760,8 @@ static ssize_t loop_rw_iter(int ddir, struct io_rw *rw, struct iov_iter *iter)
 }
 
 /*
- * This is our waitqueue callback handler, registered through __folio_lock_async()
- * when we initially tried to do the IO with the iocb armed our waitqueue.
- * This gets called when the page is unlocked, and we generally expect that to
- * happen when the page IO is completed and the page is now uptodate. This will
- * queue a task_work based retry of the operation, attempting to copy the data
- * again. If the latter fails because the page was NOT uptodate, then we will
- * do a thread based blocking retry of the operation. That's the unexpected
- * slow path.
+ * Async buffer waitqueue callback handler - called when page is unlocked
+ * after IO completion. This queues a task_work based retry of the operation.
  */
 static int io_async_buf_func(struct wait_queue_entry *wait, unsigned mode,
 			     int sync, void *arg)
@@ -762,24 +776,14 @@ static int io_async_buf_func(struct wait_queue_entry *wait, unsigned mode,
 	if (!wake_page_match(wpq, key))
 		return 0;
 
+	/* Clear WAITQ flag and remove from wait queue */
 	rw->kiocb.ki_flags &= ~IOCB_WAITQ;
 	list_del_init(&wait->entry);
 	io_req_task_queue(req);
 	return 1;
 }
 
-/*
- * This controls whether a given IO request should be armed for async page
- * based retry. If we return false here, the request is handed to the async
- * worker threads for retry. If we're doing buffered reads on a regular file,
- * we prepare a private wait_page_queue entry and retry the operation. This
- * will either succeed because the page is now uptodate and unlocked, or it
- * will register a callback when the page is unlocked at IO completion. Through
- * that callback, io_uring uses task_work to setup a retry of the operation.
- * That retry will attempt the buffered read again. The retry will generally
- * succeed, or in rare cases where it fails, we then fall back to using the
- * async worker threads for a blocking retry.
- */
+/* Determine if a read operation should use async page retry mechanism */
 static bool io_rw_should_retry(struct io_kiocb *req)
 {
 	struct io_async_rw *io = req->async_data;
@@ -787,10 +791,7 @@ static bool io_rw_should_retry(struct io_kiocb *req)
 	struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
 	struct kiocb *kiocb = &rw->kiocb;
 
-	/*
-	 * Never retry for NOWAIT or a request with metadata, we just complete
-	 * with -EAGAIN.
-	 */
+	/* Never retry for NOWAIT or metadata requests */
 	if (req->flags & (REQ_F_NOWAIT | REQ_F_HAS_METADATA))
 		return false;
 
@@ -798,14 +799,12 @@ static bool io_rw_should_retry(struct io_kiocb *req)
 	if (kiocb->ki_flags & (IOCB_DIRECT | IOCB_HIPRI))
 		return false;
 
-	/*
-	 * just use poll if we can, and don't attempt if the fs doesn't
-	 * support callback based unlocks
-	 */
+	/* Don't attempt if we can poll or fs doesn't support async unlocks */
 	if (io_file_can_poll(req) ||
 	    !(req->file->f_op->fop_flags & FOP_BUFFER_RASYNC))
 		return false;
 
+	/* Setup waitqueue entry for async retry */
 	wait->wait.func = io_async_buf_func;
 	wait->wait.private = req;
 	wait->wait.flags = 0;
@@ -816,6 +815,7 @@ static bool io_rw_should_retry(struct io_kiocb *req)
 	return true;
 }
 
+/* Perform read operation using appropriate file operations */
 static inline int io_iter_do_read(struct io_rw *rw, struct iov_iter *iter)
 {
 	struct file *file = rw->kiocb.ki_filp;
@@ -828,12 +828,14 @@ static inline int io_iter_do_read(struct io_rw *rw, struct iov_iter *iter)
 		return -EINVAL;
 }
 
+/* Check if operation needs complete_io handling (regular files/block devices) */
 static bool need_complete_io(struct io_kiocb *req)
 {
 	return req->flags & REQ_F_ISREG ||
 		S_ISBLK(file_inode(req->file)->i_mode);
 }
 
+/* Initialize file for read/write operation */
 static int io_rw_init_file(struct io_kiocb *req, fmode_t mode, int rw_type)
 {
 	struct io_rw *rw = io_kiocb_to_cmd(req, struct io_rw);
@@ -842,9 +844,11 @@ static int io_rw_init_file(struct io_kiocb *req, fmode_t mode, int rw_type)
 	struct file *file = req->file;
 	int ret;
 
+	/* Check file mode */
 	if (unlikely(!(file->f_mode & mode)))
 		return -EBADF;
 
+	/* Get file flags if not fixed file */
 	if (!(req->flags & REQ_F_FIXED_FILE))
 		req->flags |= io_file_get_flags(file);
 
@@ -855,14 +859,15 @@ static int io_rw_init_file(struct io_kiocb *req, fmode_t mode, int rw_type)
 	kiocb->ki_flags |= IOCB_ALLOC_CACHE;
 
 	/*
-	 * If the file is marked O_NONBLOCK, still allow retry for it if it
-	 * supports async. Otherwise it's impossible to use O_NONBLOCK files
-	 * reliably. If not, or it IOCB_NOWAIT is set, don't retry.
+	 * Handle NOWAIT cases:
+	 * - If IOCB_NOWAIT is set
+	 * - Or file is O_NONBLOCK but doesn't support NOWAIT
 	 */
 	if (kiocb->ki_flags & IOCB_NOWAIT ||
 	    ((file->f_flags & O_NONBLOCK && !(req->flags & REQ_F_SUPPORT_NOWAIT))))
 		req->flags |= REQ_F_NOWAIT;
 
+	/* IOPOLL setup */
 	if (ctx->flags & IORING_SETUP_IOPOLL) {
 		if (!(kiocb->ki_flags & IOCB_DIRECT) || !file->f_op->iopoll)
 			return -EOPNOTSUPP;
@@ -870,7 +875,6 @@ static int io_rw_init_file(struct io_kiocb *req, fmode_t mode, int rw_type)
 		kiocb->ki_flags |= IOCB_HIPRI;
 		req->iopoll_completed = 0;
 		if (ctx->flags & IORING_SETUP_HYBRID_IOPOLL) {
-			/* make sure every req only blocks once*/
 			req->flags &= ~REQ_F_IOPOLL_STATE;
 			req->iopoll_start = ktime_get_ns();
 		}
@@ -879,13 +883,11 @@ static int io_rw_init_file(struct io_kiocb *req, fmode_t mode, int rw_type)
 			return -EINVAL;
 	}
 
+	/* Metadata handling */
 	if (req->flags & REQ_F_HAS_METADATA) {
 		struct io_async_rw *io = req->async_data;
 
-		/*
-		 * We have a union of meta fields with wpq used for buffered-io
-		 * in io_async_rw, so fail it here.
-		 */
+		/* Metadata only supported for O_DIRECT */
 		if (!(req->file->f_flags & O_DIRECT))
 			return -EOPNOTSUPP;
 		kiocb->ki_flags |= IOCB_HAS_METADATA;
@@ -895,6 +897,7 @@ static int io_rw_init_file(struct io_kiocb *req, fmode_t mode, int rw_type)
 	return 0;
 }
 
+/* Main read operation handler */
 static int __io_read(struct io_kiocb *req, unsigned int issue_flags)
 {
 	bool force_nonblock = issue_flags & IO_URING_F_NONBLOCK;
@@ -904,6 +907,7 @@ static int __io_read(struct io_kiocb *req, unsigned int issue_flags)
 	ssize_t ret;
 	loff_t *ppos;
 
+	/* Import buffers */
 	if (req->flags & REQ_F_IMPORT_BUFFER) {
 		ret = io_rw_import_reg_vec(req, io, ITER_DEST, issue_flags);
 		if (unlikely(ret))
@@ -913,45 +917,44 @@ static int __io_read(struct io_kiocb *req, unsigned int issue_flags)
 		if (unlikely(ret < 0))
 			return ret;
 	}
+	
+	/* Initialize file for reading */
 	ret = io_rw_init_file(req, FMODE_READ, READ);
 	if (unlikely(ret))
 		return ret;
 	req->cqe.res = iov_iter_count(&io->iter);
 
+	/* Handle non-blocking case */
 	if (force_nonblock) {
-		/* If the file doesn't support async, just async punt */
 		if (unlikely(!io_file_supports_nowait(req, EPOLLIN)))
 			return -EAGAIN;
 		kiocb->ki_flags |= IOCB_NOWAIT;
 	} else {
-		/* Ensure we clear previously set non-block flag */
 		kiocb->ki_flags &= ~IOCB_NOWAIT;
 	}
 
 	ppos = io_kiocb_update_pos(req);
 
+	/* Verify read area */
 	ret = rw_verify_area(READ, req->file, ppos, req->cqe.res);
 	if (unlikely(ret))
 		return ret;
 
+	/* Perform the actual read */
 	ret = io_iter_do_read(rw, &io->iter);
 
-	/*
-	 * Some file systems like to return -EOPNOTSUPP for an IOCB_NOWAIT
-	 * issue, even though they should be returning -EAGAIN. To be safe,
-	 * retry from blocking context for either.
-	 */
+	/* Transform -EOPNOTSUPP to -EAGAIN for non-blocking case */
 	if (ret == -EOPNOTSUPP && force_nonblock)
 		ret = -EAGAIN;
 
 	if (ret == -EAGAIN) {
-		/* If we can poll, just do that. */
+		/* If we can poll, just do that */
 		if (io_file_can_poll(req))
 			return -EAGAIN;
 		/* IOPOLL retry should happen for io-wq threads */
 		if (!force_nonblock && !(req->ctx->flags & IORING_SETUP_IOPOLL))
 			goto done;
-		/* no retry on NONBLOCK nor RWF_NOWAIT */
+		/* No retry on NONBLOCK nor RWF_NOWAIT */
 		if (req->flags & REQ_F_NOWAIT)
 			goto done;
 		ret = 0;
@@ -960,52 +963,39 @@ static int __io_read(struct io_kiocb *req, unsigned int issue_flags)
 	} else if (ret == req->cqe.res || ret <= 0 || !force_nonblock ||
 		   (req->flags & REQ_F_NOWAIT) || !need_complete_io(req) ||
 		   (issue_flags & IO_URING_F_MULTISHOT)) {
-		/* read all, failed, already did sync or don't want to retry */
 		goto done;
 	}
 
 	/*
-	 * Don't depend on the iter state matching what was consumed, or being
-	 * untouched in case of error. Restore it and we'll advance it
-	 * manually if we need to.
+	 * Partial read handling - restore iterator state and retry
 	 */
 	iov_iter_restore(&io->iter, &io->iter_state);
 	io_meta_restore(io, kiocb);
 
+	/* Retry loop for partial reads */
 	do {
-		/*
-		 * We end up here because of a partial read, either from
-		 * above or inside this loop. Advance the iter by the bytes
-		 * that were consumed.
-		 */
+		/* Advance iterator by bytes consumed */
 		iov_iter_advance(&io->iter, ret);
 		if (!iov_iter_count(&io->iter))
 			break;
 		io->bytes_done += ret;
 		iov_iter_save_state(&io->iter, &io->iter_state);
 
-		/* if we can retry, do so with the callbacks armed */
+		/* Check if we should retry with async mechanism */
 		if (!io_rw_should_retry(req)) {
 			kiocb->ki_flags &= ~IOCB_WAITQ;
 			return -EAGAIN;
 		}
 
 		req->cqe.res = iov_iter_count(&io->iter);
-		/*
-		 * Now retry read with the IOCB_WAITQ parts set in the iocb. If
-		 * we get -EIOCBQUEUED, then we'll get a notification when the
-		 * desired page gets unlocked. We can also get a partial read
-		 * here, and if we do, then just retry at the new offset.
-		 */
+		/* Retry read with IOCB_WAITQ set */
 		ret = io_iter_do_read(rw, &io->iter);
 		if (ret == -EIOCBQUEUED)
 			return IOU_ISSUE_SKIP_COMPLETE;
-		/* we got some bytes, but not all. retry. */
 		kiocb->ki_flags &= ~IOCB_WAITQ;
 		iov_iter_restore(&io->iter, &io->iter_state);
 	} while (ret > 0);
 done:
-	/* it's faster to check here then delegate to kfree */
 	return ret;
 }
 

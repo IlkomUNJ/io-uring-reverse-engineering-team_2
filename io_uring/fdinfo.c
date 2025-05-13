@@ -16,6 +16,9 @@
 #include "rsrc.h"
 
 #ifdef CONFIG_PROC_FS
+
+/* Displays credential information for an io_uring personality to the proc filesystem. 
+Shows user IDs, group IDs, group memberships, and capability information in a formatted way that's readable in /proc. */
 static __cold int io_uring_show_cred(struct seq_file *m, unsigned int id,
 		const struct cred *cred)
 {
@@ -46,6 +49,9 @@ static __cold int io_uring_show_cred(struct seq_file *m, unsigned int id,
 	return 0;
 }
 
+/* Outputs NAPI (Network API) tracking configuration details to the proc filesystem. 
+Displays whether busy polling is enabled, what tracking strategy is being used, 
+and various timing parameters for network processing optimization. */
 #ifdef CONFIG_NET_RX_BUSY_POLL
 static __cold void common_tracking_show_fdinfo(struct io_ring_ctx *ctx,
 					       struct seq_file *m,
@@ -60,6 +66,9 @@ static __cold void common_tracking_show_fdinfo(struct io_ring_ctx *ctx,
 		seq_puts(m, "napi_prefer_busy_poll:\tfalse\n");
 }
 
+/* Shows the current NAPI (Network API) tracking mode for this io_uring instance. 
+Determines whether network polling is disabled, dynamic, or static, and outputs 
+the appropriate information to proc. */
 static __cold void napi_show_fdinfo(struct io_ring_ctx *ctx,
 				    struct seq_file *m)
 {
