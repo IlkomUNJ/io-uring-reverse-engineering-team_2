@@ -17,4 +17,4 @@ Score is mainly calculated from individual contributions made to the commit. The
 - Muhammad Vlas (1313623039)
 - Muhammad Zufar Al Faruqi (1313623041)
 - Muhammad Irfan Agasi (1313623042)
-- Deric Navino (1313623045)
+- Deric Navino - ricoo-io (1313623045)
