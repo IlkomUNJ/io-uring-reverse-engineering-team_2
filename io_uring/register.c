@@ -35,6 +35,10 @@
 #define IORING_MAX_RESTRICTIONS	(IORING_RESTRICTION_LAST + \
 				 IORING_REGISTER_LAST + IORING_OP_LAST)
 
+/* 
+ * Provides information about supported io_uring operations to userspace.
+ * Copies operation flags to user-provided buffer indicating which operations are supported.
+ */
 static __cold int io_probe(struct io_ring_ctx *ctx, void __user *arg,
 			   unsigned nr_args)
 {
@@ -74,6 +78,10 @@ out:
 	return ret;
 }
 
+/* 
+ * Unregisters a personality previously registered with io_register_personality.
+ * Removes credential mapping from personality ID and releases associated resources.
+ */
 int io_unregister_personality(struct io_ring_ctx *ctx, unsigned id)
 {
 	const struct cred *creds;
@@ -87,7 +95,10 @@ int io_unregister_personality(struct io_ring_ctx *ctx, unsigned id)
 	return -EINVAL;
 }
 
-
+/* 
+ * Registers current process credentials as a personality for later use.
+ * Allocates an ID that can be used in subsequent operations to run with these credentials.
+ */
 static int io_register_personality(struct io_ring_ctx *ctx)
 {
 	const struct cred *creds;
@@ -105,6 +116,10 @@ static int io_register_personality(struct io_ring_ctx *ctx)
 	return id;
 }
 
+/* 
+ * Parses restrictions from user space and applies them to io_uring context.
+ * Controls which operations and flags are allowed to be used with this ring.
+ */
 static __cold int io_parse_restrictions(void __user *arg, unsigned int nr_args,
 					struct io_restriction *restrictions)
 {
@@ -155,6 +170,10 @@ err:
 	return ret;
 }
 
+/* 
+ * Registers restrictions on allowed operations for an io_uring instance.
+ * Can only be used with rings created with IORING_SETUP_R_DISABLED flag.
+ */
 static __cold int io_register_restrictions(struct io_ring_ctx *ctx,
 					   void __user *arg, unsigned int nr_args)
 {
@@ -177,6 +196,10 @@ static __cold int io_register_restrictions(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/* 
+ * Enables a previously disabled io_uring instance after restrictions setup.
+ * Activates the ring for operations following restriction configuration.
+ */
 static int io_register_enable_rings(struct io_ring_ctx *ctx)
 {
 	if (!(ctx->flags & IORING_SETUP_R_DISABLED))
@@ -201,6 +224,10 @@ static int io_register_enable_rings(struct io_ring_ctx *ctx)
 	return 0;
 }
 
+/* 
+ * Registers CPU affinity for io_uring worker threads.
+ * Sets which CPUs the async workers or SQ poll thread can run on.
+ */
 static __cold int __io_register_iowq_aff(struct io_ring_ctx *ctx,
 					 cpumask_var_t new_mask)
 {
@@ -217,6 +244,10 @@ static __cold int __io_register_iowq_aff(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/* 
+ * Registers CPU affinity for io_uring worker threads from user space input.
+ * Parses CPU mask from user space and applies it to worker threads.
+ */
 static __cold int io_register_iowq_aff(struct io_ring_ctx *ctx,
 				       void __user *arg, unsigned len)
 {
@@ -249,11 +280,19 @@ static __cold int io_register_iowq_aff(struct io_ring_ctx *ctx,
 	return ret;
 }
 
+/* 
+ * Removes CPU affinity restrictions from io_uring worker threads.
+ * Returns workers to default scheduling behavior across all CPUs.
+ */
 static __cold int io_unregister_iowq_aff(struct io_ring_ctx *ctx)
 {
 	return __io_register_iowq_aff(ctx, NULL);
 }
 
+/* 
+ * Registers maximum worker thread count limits for io_uring workers.
+ * Controls resource usage by limiting how many worker threads can be created.
+ */
 static __cold int io_register_iowq_max_workers(struct io_ring_ctx *ctx,
 					       void __user *arg)
 	__must_hold(&ctx->uring_lock)
@@ -340,6 +379,10 @@ err:
 	return ret;
 }
 
+/* 
+ * Registers a clock source for use with timeouts in this io_uring instance.
+ * Allows selection between different clock sources like monotonic or boottime.
+ */
 static int io_register_clock(struct io_ring_ctx *ctx,
 			     struct io_uring_clock_register __user *arg)
 {
@@ -377,6 +420,10 @@ struct io_ring_ctx_rings {
 	struct io_mapped_region ring_region;
 };
 
+/* 
+ * Cleans up resources allocated during ring resizing operation.
+ * Frees memory regions for submission queue and ring buffers.
+ */
 static void io_register_free_rings(struct io_ring_ctx *ctx,
 				   struct io_uring_params *p,
 				   struct io_ring_ctx_rings *r)
@@ -395,6 +442,10 @@ static void io_register_free_rings(struct io_ring_ctx *ctx,
 #define COPY_FLAGS	(IORING_SETUP_NO_SQARRAY | IORING_SETUP_SQE128 | \
 			 IORING_SETUP_CQE32 | IORING_SETUP_NO_MMAP)
 
+/* 
+ * Resizes submission and completion rings to new dimensions.
+ * Creates new rings, migrates existing entries, and swaps with old rings.
+ */
 static int io_register_resize_rings(struct io_ring_ctx *ctx, void __user *arg)
 {
 	struct io_uring_region_desc rd;
@@ -581,6 +632,10 @@ out:
 	return ret;
 }
 
+/* 
+ * Registers a memory region for parameter passing with io_uring operations.
+ * Allows efficient parameter sharing without repeated user/kernel memory copies.
+ */
 static int io_register_mem_region(struct io_ring_ctx *ctx, void __user *uarg)
 {
 	struct io_uring_mem_region_reg __user *reg_uptr = uarg;
@@ -626,6 +681,10 @@ static int io_register_mem_region(struct io_ring_ctx *ctx, void __user *uarg)
 	return 0;
 }
 
+/* 
+ * Main handler for io_uring_register system call operations.
+ * Dispatches to appropriate handler based on operation code and validates arguments.
+ */
 static int __io_uring_register(struct io_ring_ctx *ctx, unsigned opcode,
 			       void __user *arg, unsigned nr_args)
 	__releases(ctx->uring_lock)
@@ -874,9 +933,9 @@ struct file *io_uring_register_get_file(unsigned int fd, bool registered)
 	return ERR_PTR(-EOPNOTSUPP);
 }
 
-/*
- * "blind" registration opcodes are ones where there's no ring given, and
- * hence the source fd must be -1.
+/* 
+ * Handles registration operations that don't require a specific ring (blind operations).
+ * Used for operations where the source fd must be -1.
  */
 static int io_uring_register_blind(unsigned int opcode, void __user *arg,
 				   unsigned int nr_args)
@@ -900,6 +959,10 @@ static int io_uring_register_blind(unsigned int opcode, void __user *arg,
 	return -EINVAL;
 }
 
+/* 
+ * System call entry point for io_uring_register operations.
+ * Validates inputs, gets the io_uring context, and delegates to appropriate handler.
+ */
 SYSCALL_DEFINE4(io_uring_register, unsigned int, fd, unsigned int, opcode,
 		void __user *, arg, unsigned int, nr_args)
 {

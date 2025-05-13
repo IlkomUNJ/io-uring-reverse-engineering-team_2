@@ -39,16 +39,24 @@
 #include "truncate.h"
 #include "zcrx.h"
 
+/* 
+ * Fallback handler for operation issuing that should never be called.
+ * Used when an operation has special handling and direct issue isn't supported.
+ */
 static int io_no_issue(struct io_kiocb *req, unsigned int issue_flags)
 {
-	WARN_ON_ONCE(1);
-	return -ECANCELED;
+    WARN_ON_ONCE(1);
+    return -ECANCELED;
 }
 
+/* 
+ * Generic preparation function for unsupported operations.
+ * Returns -EOPNOTSUPP to indicate the operation isn't available.
+ */
 static __maybe_unused int io_eopnotsupp_prep(struct io_kiocb *kiocb,
-					     const struct io_uring_sqe *sqe)
+                         const struct io_uring_sqe *sqe)
 {
-	return -EOPNOTSUPP;
+    return -EOPNOTSUPP;
 }
 
 const struct io_issue_def io_issue_defs[] = {
@@ -817,32 +825,44 @@ const struct io_cold_def io_cold_defs[] = {
 	},
 };
 
+/* 
+ * Returns string name of an io_uring operation based on its opcode.
+ * Used for debugging and logging purposes.
+ */
 const char *io_uring_get_opcode(u8 opcode)
 {
-	if (opcode < IORING_OP_LAST)
-		return io_cold_defs[opcode].name;
-	return "INVALID";
+    if (opcode < IORING_OP_LAST)
+        return io_cold_defs[opcode].name;
+    return "INVALID";
 }
 
+/* 
+ * Checks if an operation type is supported in the current kernel configuration.
+ * Returns true if the operation has a valid preparation function.
+ */
 bool io_uring_op_supported(u8 opcode)
 {
-	if (opcode < IORING_OP_LAST &&
-	    io_issue_defs[opcode].prep != io_eopnotsupp_prep)
-		return true;
-	return false;
+    if (opcode < IORING_OP_LAST &&
+        io_issue_defs[opcode].prep != io_eopnotsupp_prep)
+        return true;
+    return false;
 }
 
+/* 
+ * Initializes the io_uring operation tables at kernel boot time.
+ * Performs validation checks to ensure all operations have proper handlers.
+ */
 void __init io_uring_optable_init(void)
 {
-	int i;
+    int i;
 
-	BUILD_BUG_ON(ARRAY_SIZE(io_cold_defs) != IORING_OP_LAST);
-	BUILD_BUG_ON(ARRAY_SIZE(io_issue_defs) != IORING_OP_LAST);
+    BUILD_BUG_ON(ARRAY_SIZE(io_cold_defs) != IORING_OP_LAST);
+    BUILD_BUG_ON(ARRAY_SIZE(io_issue_defs) != IORING_OP_LAST);
 
-	for (i = 0; i < ARRAY_SIZE(io_issue_defs); i++) {
-		BUG_ON(!io_issue_defs[i].prep);
-		if (io_issue_defs[i].prep != io_eopnotsupp_prep)
-			BUG_ON(!io_issue_defs[i].issue);
-		WARN_ON_ONCE(!io_cold_defs[i].name);
-	}
+    for (i = 0; i < ARRAY_SIZE(io_issue_defs); i++) {
+        BUG_ON(!io_issue_defs[i].prep);
+        if (io_issue_defs[i].prep != io_eopnotsupp_prep)
+            BUG_ON(!io_issue_defs[i].issue);
+        WARN_ON_ONCE(!io_cold_defs[i].name);
+    }
 }
