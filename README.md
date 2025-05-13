@@ -16,5 +16,5 @@ Score is mainly calculated from individual contributions made to the commit. The
 ## Team Members
 - Muhammad Vlas -v1a5 (1313623039)
 - Muhammad Zufar Al Faruqi (1313623041)
-- Muhammad Irfan Agasi (1313623042)
+- Muhammad Irfan Agasi - IrfanAgasi (1313623042)
 - Deric Navino - ricoo-io (1313623045)
