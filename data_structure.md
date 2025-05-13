@@ -3,44 +3,50 @@ The objective of this task is to document all internal data structures defined i
 
 Structure name | Defined in | Attributes | Caller Functions Source | source caller | usage
 ---------------|------------|------------|-------------------------|---------------|-------------------
-io_fadvise       | io_uring/advise.c | file, u64, u64, u32 | io_fadvise_prep | io_uring/advise.c | local variable
-| | | | io_fadvise_force_async | io_uring/advise.c | function parameter
-| | | | io_fadvise | io_uring/advise.c | local variable
-io_madvise       | io_uring/advise.c | file, u64, u64, u32 | io_madvise_prep | io_uring/advise.c | local variable
-| | | | io_madvise | io_uring/advise.c | local variable
-io_fadvise       | io_uring/advise.h | (declaration only) | io_fadvise_prep | io_uring/advise.c | local variable (via function declaration)
-| | | | io_fadvise | io_uring/advise.c | local variable (via function declaration)
-io_madvise       | io_uring/advise.h | (declaration only) | io_madvise_prep | io_uring/advise.c | local variable (via function declaration)
-| | | | io_madvise | io_uring/advise.c | local variable (via function declaration)
-io_alloc_cache   | io_uring/alloc_cache.c | void**, unsigned int, unsigned int, unsigned int | io_alloc_cache_free | io_uring/alloc_cache.c | function parameter
-| | | | io_alloc_cache_init | io_uring/alloc_cache.c | function parameter
-| | | | io_cache_alloc_new | io_uring/alloc_cache.c | function parameter
-io_alloc_cache   | io_uring/alloc_cache.h | void**, unsigned int, unsigned int, unsigned int | io_alloc_cache_free | io_uring/alloc_cache.c | function parameter (via function declaration)
-| | | | io_alloc_cache_init | io_uring/alloc_cache.c | function parameter (via function declaration)
-| | | | io_cache_alloc_new | io_uring/alloc_cache.c | function parameter (via function declaration)
-| | | | io_alloc_cache_put | io_uring/alloc_cache.h | function parameter
-| | | | io_alloc_cache_get | io_uring/alloc_cache.h | function parameter
-| | | | io_cache_alloc | io_uring/alloc_cache.h | function parameter
-| | | | io_cache_free | io_uring/alloc_cache.h | function parameter
-io_cancel        | io_uring/cancel.c | file, u64, u32, s32, u8 | io_async_cancel_prep | io_uring/cancel.c | local variable
-| | | | io_async_cancel | io_uring/cancel.c | local variable
-io_cancel_data   | io_uring/cancel.h | io_ring_ctx, union (u64/file*), u8, u32, int | io_cancel_req_match | io_uring/cancel.c | function parameter
-| | | | io_async_cancel_one | io_uring/cancel.c | function parameter
-| | | | io_try_cancel | io_uring/cancel.c | function parameter
-| | | | __io_async_cancel | io_uring/cancel.c | function parameter
-| | | | __io_sync_cancel | io_uring/cancel.c | function parameter
-| | | | io_sync_cancel | io_uring/cancel.c | local variable
-| | | | io_cancel_remove_all | io_uring/cancel.h | function parameter (via function declaration)
-| | | | io_cancel_remove | io_uring/cancel.h | function parameter (via function declaration)
-| | | | io_cancel_match_sequence | io_uring/cancel.h | function parameter
-io_epoll         | io_uring/epoll.c | file, int, int, int, epoll_event | io_epoll_ctl_prep | io_uring/epoll.c | local variable
-| | | | io_epoll_ctl | io_uring/epoll.c | local variable
-io_epoll_wait    | io_uring/epoll.c | file, int, epoll_event __user* | io_epoll_wait_prep | io_uring/epoll.c | local variable
-| | | | io_epoll_wait | io_uring/epoll.c | local variable
-io_epoll         | io_uring/epoll.h | (declaration only) | io_epoll_ctl_prep | io_uring/epoll.c | local variable (via function declaration)
-| | | | io_epoll_ctl | io_uring/epoll.c | local variable (via function declaration)
-io_epoll_wait    | io_uring/epoll.h | (declaration only) | io_epoll_wait_prep | io_uring/epoll.c | local variable (via function declaration)
-| | | | io_epoll_wait | io_uring/epoll.c | local variable (via function declaration)
+io_fadvise | io_uring/advise.c | struct file			*file, u64				offset, u64				len, u32				advice | io_fadvise | io_uring/advise.c | function call
+ |  |  |  | io_fadvise_force_async | io_uring/advise.c | variable declaration
+ |  |  |  | io_fadvise_prep | io_uring/advise.c | variable declaration
+ |  |  |  | io_fadvise | io_uring/advise.h | function call
+ |  |  |  | io_eopnotsupp_prep | io_uring/opdef.c | assignment or return
+io_madvise | io_uring/advise.c | struct file			*file, u64				addr, u64				len, u32				advice | io_madvise | io_uring/advise.c | function call
+ |  |  |  | io_madvise_prep | io_uring/advise.c | variable declaration
+ |  |  |  | io_madvise | io_uring/advise.h | function call
+ |  |  |  | io_eopnotsupp_prep | io_uring/opdef.c | assignment or return
+io_cancel | io_uring/cancel.c | struct file			*file, u64				addr, u32				flags, s32				fd, u8				opcode | io_async_cancel | io_uring/cancel.c | variable declaration
+ |  |  |  | io_async_cancel_prep | io_uring/cancel.c | variable declaration
+io_cancel_data | io_uring/cancel.h | struct io_ring_ctx *ctx, union { 		u64 data, struct file *file | __io_sync_cancel | io_uring/cancel.c | variable declaration
+ |  |  |  | io_async_cancel | io_uring/cancel.c | declaration
+ |  |  |  | io_async_cancel_one | io_uring/cancel.c | variable declaration
+ |  |  |  | io_async_cancel_prep | io_uring/cancel.c | variable declaration
+ |  |  |  | io_cancel_cb | io_uring/cancel.c | variable declaration
+ |  |  |  | io_cancel_remove_all | io_uring/cancel.c | variable declaration
+ |  |  |  | io_cancel_req_match | io_uring/cancel.c | variable declaration
+ |  |  |  | io_sync_cancel | io_uring/cancel.c | declaration
+ |  |  |  | io_async_cancel | io_uring/cancel.h | variable declaration
+ |  |  |  | io_cancel_remove_all | io_uring/cancel.h | variable declaration
+ |  |  |  | io_cancel_req_match | io_uring/cancel.h | variable declaration
+ |  |  |  | __io_futex_cancel | io_uring/futex.c | variable declaration
+ |  |  |  | io_futex_cache_free | io_uring/futex.h | variable declaration
+ |  |  |  | io_futex_wake | io_uring/futex.h | variable declaration
+ |  |  |  | __io_poll_cancel | io_uring/poll.c | variable declaration
+ |  |  |  | io_poll_remove | io_uring/poll.c | declaration
+ |  |  |  | io_poll_remove_all | io_uring/poll.c | variable declaration
+ |  |  |  | io_poll_remove | io_uring/poll.h | reference
+ |  |  |  | io_req_task_link_timeout | io_uring/timeout.c | declaration
+ |  |  |  | io_timeout_cancel | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_fn | io_uring/timeout.c | variable declaration
+ |  |  |  | io_timeout_remove | io_uring/timeout.c | declaration
+ |  |  |  | io_timeout_update | io_uring/timeout.c | declaration
+ |  |  |  | io_flush_timeouts | io_uring/timeout.h | reference
+ |  |  |  | io_timeout_cancel | io_uring/timeout.h | variable declaration
+ |  |  |  | __io_waitid_cancel | io_uring/waitid.c | variable declaration
+ |  |  |  | io_waitid | io_uring/waitid.h | variable declaration
+io_epoll | io_uring/epoll.c | struct file			*file, int				epfd, int				op, int				fd, struct epoll_event		event | io_epoll_ctl | io_uring/epoll.c | variable declaration
+ |  |  |  | io_epoll_ctl_prep | io_uring/epoll.c | variable declaration
+io_epoll_wait | io_uring/epoll.c | struct file			*file, int				maxevents, struct epoll_event __user	*events | io_epoll_wait | io_uring/epoll.c | function call
+ |  |  |  | io_epoll_wait_prep | io_uring/epoll.c | variable declaration
+ |  |  |  | io_epoll_wait | io_uring/epoll.h | function call
+ |  |  |  | io_eopnotsupp_prep | io_uring/opdef.c | assignment or return
 io_ev_fd       | io_uring/eventfd.c | eventfd_ctx, uint, uint, refcount_t, atomic_t, rcu_head | io_eventfd_free | io_uring/eventfd.c | local variable
 | | | | io_eventfd_put | io_uring/eventfd.c | function parameter
 | | | | io_eventfd_do_signal | io_uring/eventfd.c | local variable, function parameter
