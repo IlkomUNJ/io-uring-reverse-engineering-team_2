@@ -15,4 +15,4 @@ Score is mainly calculated from individual contributions made to the commit. The
 
 ## Team Members
 - Muhammad Vlas (1313623039)
-- Member B
+- Muhammad Zufar Al Faruqi (1313623041)
