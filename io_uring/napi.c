@@ -18,6 +18,7 @@ struct io_napi_entry {
 	struct rcu_head		rcu;
 };
 
+/* Searches for a NAPI entry by ID in the hash list. */
 static struct io_napi_entry *io_napi_hash_find(struct hlist_head *hash_list,
 					       unsigned int napi_id)
 {
@@ -32,12 +33,17 @@ static struct io_napi_entry *io_napi_hash_find(struct hlist_head *hash_list,
 	return NULL;
 }
 
+/* Converts network time format to kernel time format. */
 static inline ktime_t net_to_ktime(unsigned long t)
 {
 	/* napi approximating usecs, reverse busy_loop_current_time */
 	return ns_to_ktime(t << 10);
 }
 
+/*
+ Adds a new NAPI ID to tracking list.
+ Validates the ID, hashes it, checks for duplicates, and adds a new entry to both hash table and list.
+*/
 int __io_napi_add_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 {
 	struct hlist_head *hash_list;
@@ -81,6 +87,10 @@ int __io_napi_add_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 	return 0;
 }
 
+/*
+ Removes a NAPI ID from tracking list.
+ Validates the ID, looks up the entry in the hash table, and removes it from both data structures.
+*/
 static int __io_napi_del_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 {
 	struct hlist_head *hash_list;
@@ -102,6 +112,10 @@ static int __io_napi_del_id(struct io_ring_ctx *ctx, unsigned int napi_id)
 	return 0;
 }
 
+/*
+ Removes expired NAPI entries from the list.
+ Acquires a spinlock and iterates through the list to find and delete timed-out entries.
+*/
 static void __io_napi_remove_stale(struct io_ring_ctx *ctx)
 {
 	struct io_napi_entry *e;
@@ -122,12 +136,20 @@ static void __io_napi_remove_stale(struct io_ring_ctx *ctx)
 	}
 }
 
+/*
+ Conditionally removes stale entries if needed.
+ Only calls the stale entry removal function when the is_stale flag indicates it's necessary.
+*/
 static inline void io_napi_remove_stale(struct io_ring_ctx *ctx, bool is_stale)
 {
 	if (is_stale)
 		__io_napi_remove_stale(ctx);
 }
 
+/*
+ Checks if busy poll operation has timed out.
+ Compares the current time against the calculated end time to determine timeout status.
+*/
 static inline bool io_napi_busy_loop_timeout(ktime_t start_time,
 					     ktime_t bp)
 {
@@ -141,6 +163,10 @@ static inline bool io_napi_busy_loop_timeout(ktime_t start_time,
 	return true;
 }
 
+/*
+ Determines if the busy polling loop should exit.
+ Checks multiple exit conditions like pending signals, wake conditions, available work, or timeout.
+*/
 static bool io_napi_busy_loop_should_end(void *data,
 					 unsigned long start_time)
 {
@@ -158,8 +184,9 @@ static bool io_napi_busy_loop_should_end(void *data,
 }
 
 /*
- * never report stale entries
- */
+ Performs busy polling with static NAPI tracking.
+ Loops through all entries in the NAPI list to perform busy polling on each NAPI ID.
+*/
 static bool static_tracking_do_busy_loop(struct io_ring_ctx *ctx,
 					 bool (*loop_end)(void *, unsigned long),
 					 void *loop_end_arg)
@@ -172,6 +199,10 @@ static bool static_tracking_do_busy_loop(struct io_ring_ctx *ctx,
 	return false;
 }
 
+/*
+ Performs busy polling with dynamic NAPI tracking.
+ Loops through all entries, polls each one, and tracks stale entries for later cleanup.
+*/
 static bool
 dynamic_tracking_do_busy_loop(struct io_ring_ctx *ctx,
 			      bool (*loop_end)(void *, unsigned long),
@@ -191,6 +222,10 @@ dynamic_tracking_do_busy_loop(struct io_ring_ctx *ctx,
 	return is_stale;
 }
 
+/*
+ Routes to appropriate busy loop implementation based on tracking mode.
+ Selects either static or dynamic tracking mode based on the context configuration.
+*/
 static inline bool
 __io_napi_do_busy_loop(struct io_ring_ctx *ctx,
 		       bool (*loop_end)(void *, unsigned long),
@@ -201,6 +236,10 @@ __io_napi_do_busy_loop(struct io_ring_ctx *ctx,
 	return dynamic_tracking_do_busy_loop(ctx, loop_end, loop_end_arg);
 }
 
+/*
+ Main busy polling loop implementation.
+ Sets up loop constraints, repeatedly executes busy polling, and handles stale entry cleanup.
+*/
 static void io_napi_blocking_busy_loop(struct io_ring_ctx *ctx,
 				       struct io_wait_queue *iowq)
 {
@@ -263,6 +302,10 @@ void io_napi_free(struct io_ring_ctx *ctx)
 	INIT_LIST_HEAD_RCU(&ctx->napi_list);
 }
 
+/*
+ Registers NAPI settings with the provided parameters.
+ Validates the tracking mode, clears existing entries, and updates all tracking settings.
+*/
 static int io_napi_register_napi(struct io_ring_ctx *ctx,
 				 struct io_uring_napi *napi)
 {
